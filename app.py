@@ -40,9 +40,30 @@ def save_test_local(new_test_df):
 # --- NEW: SLIP DESIGN FUNCTION ---
 def show_receipt(data):
     val = data.tolist() if hasattr(data, 'tolist') else data
-    # Map data to variables for clarity (adjusting index based on our cols)
+    
+    # CSS for Print - This hides everything else when printing
+    st.markdown("""
+        <style>
+        @media print {
+            header, footer, .stSidebar, .stButton, .stSelectbox, .stTextInput, .stNumberInput, .login-card {
+                display: none !important;
+            }
+            .main {
+                background-color: white !important;
+            }
+            .print-container {
+                border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # The actual Slip Design
     st.markdown(f"""
-        <div style="background-color: white; padding: 15px; border: 1px solid #000; width: 320px; color: black; font-family: 'Arial', sans-serif; margin: auto;">
+        <div class="print-container" style="background-color: white; padding: 15px; border: 1px solid #000; width: 320px; color: black; font-family: 'Arial', sans-serif; margin: auto;">
             <div style="text-align: center; font-weight: bold; font-size: 22px; margin-bottom: 2px;">🧪 THE LIFE CARE</div>
             <div style="text-align: center; font-size: 10px; margin-bottom: 10px;">Modern Diagnostic Center</div>
             
@@ -72,7 +93,7 @@ def show_receipt(data):
             </div>
         </div>
     """, unsafe_allow_html=True)
-    st.button("🖨️ Print Receipt", key=f"prnt_{val[1]}", on_click=lambda: st.write("Browser ka Print (Ctrl+P) use karein"))
+    st.button("🖨️ Print Receipt", key=f"prnt_{val[1]}", on_click=lambda: st.write("Ab aap Ctrl+P dabayein print ke liye"))
 
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
