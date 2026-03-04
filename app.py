@@ -35,7 +35,7 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- 100% SAME SLIP DESIGN AS IMAGE ---
+# --- 100% SAME SLIP DESIGN AS IMAGE (ERROR FIXED) ---
 def show_receipt(data):
     val = data.tolist() if hasattr(data, 'tolist') else data
     
@@ -66,10 +66,10 @@ def show_receipt(data):
         </style>
     """, unsafe_allow_html=True)
 
-    # Process tests for table view
-    test_names = val[8].split(", ")
-    total_bill = val[9]
-    # Simple logic to show individual rates (if available) or just the total
+    # --- ERROR FIX: Checking if val[8] is string before split ---
+    test_str = str(val[8]) if val[8] and not pd.isna(val[8]) else "N/A"
+    test_names = test_str.split(", ")
+    
     test_rows_html = ""
     for i, tname in enumerate(test_names, 1):
         test_rows_html += f"<tr><td>{i}</td><td>{tname}</td><td>-</td><td>1</td><td style='text-align:right;'>-</td></tr>"
@@ -90,7 +90,7 @@ def show_receipt(data):
                     <td colspan="2"><b>Patient:</b> <span style="text-transform: uppercase;">{val[3]}</span></td>
                 </tr>
                 <tr>
-                    <td><b>Cell/Gen/Age:</b> {val[4]} / ({val[6][0]}/{val[5]})</td>
+                    <td><b>Cell/Gen/Age:</b> {val[4]} / ({str(val[6])[0] if val[6] else '?'}/{val[5]})</td>
                     <td style="text-align:right;"><b>Ref By:</b> SELF</td>
                 </tr>
             </table>
