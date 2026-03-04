@@ -35,9 +35,9 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- 2. YOUR NEW "THA LIFE CARE" DESIGN ---
+# --- 2. THE NEW "THA LIFE CARE" DESIGN (Restored) ---
 def show_receipt(val):
-    # val order: [ID, Invoice, Date, Name, Mobile, Age, Gender, Collected, Test, Total_Bill, Paid_Amount, Remaining, Result, Unit, Status]
+    val = val.tolist() if hasattr(val, 'tolist') else val
     
     st.markdown("""
         <style>
@@ -62,19 +62,22 @@ def show_receipt(val):
         .summary-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; padding: 5px 0; }
         
         @media print {
-            header, footer, .stSidebar, .stButton, [data-testid="stExpander"] { display: none !important; }
-            .slip-container { border: none; width: 100%; box-shadow: none; }
+            header, footer, .stSidebar, .stButton, .stSelectbox, .stTextInput, .stNumberInput, [data-testid="stExpander"] {
+                display: none !important;
+            }
+            .slip-container { border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # Test rows creation
-    tests = str(val[8]).split(", ")
-    test_rows = ""
-    for i, t in enumerate(tests, 1):
-        test_rows += f"<tr><td>{i}</td><td>{t}</td><td>-</td><td>1</td><td style='text-align: right;'>-</td></tr>"
+    test_str = str(val[8]) if val[8] and not pd.isna(val[8]) else "-"
+    test_names = test_str.split(", ")
+    
+    test_rows_html = ""
+    for i, tname in enumerate(test_names, 1):
+        test_rows_html += f"<tr><td>{i}</td><td>{tname}</td><td>-</td><td>1</td><td style='text-align:right;'>-</td></tr>"
 
-    slip_html = f"""
+    receipt_html = f"""
     <div class="slip-container">
         <div class="header">
             <h1>( THA LIFE CARE )</h1>
@@ -91,7 +94,7 @@ def show_receipt(val):
         <div class="dotted-line"></div>
         <table class="info-table">
             <tr><td>Patient:</td><td style="text-align: right;"><b>{val[3]}</b></td></tr>
-            <tr><td>Cell/Gen/Age:</td><td style="text-align: right;"><b>{val[4]} / ({val[6]}/{val[5]})</b></td></tr>
+            <tr><td>Cell/Gen/Age:</td><td style="text-align: right;"><b>{val[4]} / ({str(val[6])[0] if val[6] else '?'}/{val[5]})</b></td></tr>
             <tr><td>Ref By:</td><td style="text-align: right;"><b>SELF</b></td></tr>
             <tr><td>Doctor:</td><td style="text-align: right;"><b>DR. ZAIN</b></td></tr>
         </table>
@@ -100,7 +103,7 @@ def show_receipt(val):
                 <tr><th>S#</th><th>CHARGES</th><th>Rate</th><th>Qty</th><th style="text-align: right;">AMT</th></tr>
             </thead>
             <tbody>
-                {test_rows}
+                {test_rows_html}
             </tbody>
         </table>
         <div class="summary-section">
@@ -117,13 +120,14 @@ def show_receipt(val):
         </div>
     </div>
     """
-    st.markdown(slip_html, unsafe_allow_html=True)
-    if st.button("🖨️ Print Now", key=f"print_{val[1]}"):
+    st.markdown(receipt_html, unsafe_allow_html=True)
+    if st.button("🖨️ Print Now", key=f"btn_{val[1]}_{val[0]}"):
         st.info("Keyboard se **Ctrl + P** dabayein.")
 
-# --- 3. MAIN APP LOGIC (NO CHANGES) ---
+# --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
 
+# --- 4. SESSION STATE ---
 if 'temp_tests' not in st.session_state: st.session_state.temp_tests = [] 
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
@@ -135,6 +139,7 @@ def check_login(u, p):
         st.rerun()
     else: st.error("Invalid Username or Password")
 
+# --- 5. MAIN LOGIC ---
 if not st.session_state['auth']:
     show_login_page(check_login)
 else:
@@ -154,7 +159,6 @@ else:
         st.metric("Aaj Ke Dues", f"Rs. {total_dues}")
         st.divider()
         menu = st.radio("Navigation", ["Registration", "Dues & Reports", "Excel History"])
-        
         st.divider()
         if st.checkbox("Enable Delete Option"):
             if st.button("⚠️ Delete All Patient Data", type="primary"):
@@ -162,11 +166,11 @@ else:
                     os.remove(PATIENT_FILE)
                     st.success("Sabh data delete ho gaya!")
                     st.rerun()
-
         if st.button("Logout"):
             st.session_state['auth'] = False
             st.rerun()
 
+    # --- REGISTRATION ---
     if menu == "Registration":
         st.header("New Patient Registration")
         if st.session_state.show_slip:
@@ -228,5 +232,43 @@ else:
                     st.session_state.show_slip = new_row 
                     st.session_state.temp_tests = [] 
                     st.rerun()
-    
-    # ... Baki menus (Dues & History) wese hi rahenge ...
+
+    # --- DUES & REPORTS (Restored) ---
+    elif menu == "Dues & Reports":
+        st.header("Update Records & Results")
+        if not df.empty:
+            pending_df = df[(df["Remaining"] > 0) | (df["Result"] == "-")]
+            if not pending_df.empty:
+                sel_patient = st.selectbox("Search Patient", pending_df["Name"].tolist())
+                p_data = df[df["Name"] == sel_patient].iloc[-1]
+                st.info(f"Test: {p_data['Test']} | Dues: Rs. {p_data['Remaining']}")
+                c_a, c_b = st.columns(2)
+                add_p = c_a.number_input("Add More Payment", 0)
+                res_v = c_b.text_input("Enter Result", value=p_data['Result'])
+                if st.button("Update & Save Record"):
+                    new_paid = p_data["Paid_Amount"] + add_p
+                    new_rem = p_data["Total_Bill"] - new_paid
+                    df.loc[df["ID"] == p_data["ID"], ["Paid_Amount", "Remaining", "Status", "Result"]] = [new_paid, new_rem, ("Paid" if new_rem<=0 else "Pending"), res_v]
+                    df.to_csv(PATIENT_FILE, index=False)
+                    st.success("Updated!")
+                    st.rerun()
+            else:
+                st.write("Koi pending record nahi hai.")
+
+    # --- EXCEL HISTORY (Restored) ---
+    elif menu == "Excel History":
+        st.header("📊 Lab Database History")
+        with st.expander("🖨️ Reprint Old Slip"):
+            if not df.empty:
+                patient_names = df["Name"].tolist()
+                selected_p = st.selectbox("Select Patient to Print", ["-- Select --"] + patient_names)
+                if selected_p != "-- Select --":
+                    p_to_print = df[df["Name"] == selected_p].iloc[-1]
+                    show_receipt(p_to_print)
+        st.divider()
+        search_query = st.text_input("🔍 Search History")
+        if search_query:
+            filtered_df = df[df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
+            st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+        else:
+            st.dataframe(df, use_container_width=True, hide_index=True)
