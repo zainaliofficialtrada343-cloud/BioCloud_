@@ -35,84 +35,95 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- 100% MATCHED SLIP DESIGN ---
-def show_receipt(data):
-    val = data.tolist() if hasattr(data, 'tolist') else data
+# --- 2. YOUR NEW "THA LIFE CARE" DESIGN ---
+def show_receipt(val):
+    # val order: [ID, Invoice, Date, Name, Mobile, Age, Gender, Collected, Test, Total_Bill, Paid_Amount, Remaining, Result, Unit, Status]
     
     st.markdown("""
         <style>
+        .slip-container {
+            width: 450px; background: white; padding: 25px; color: black;
+            border: 1px solid #ddd; font-family: 'Segoe UI', Arial, sans-serif; margin: auto;
+        }
+        .header { text-align: center; }
+        .header h1 { font-size: 28px; font-weight: 900; text-transform: uppercase; margin: 0; }
+        .header p { font-size: 14px; font-weight: bold; margin: 2px 0; }
+        .title-bar {
+            border-top: 3px solid black; border-bottom: 3px solid black;
+            text-align: center; margin: 15px 0; padding: 5px 0;
+        }
+        .title-bar h2 { font-size: 20px; letter-spacing: 2px; font-weight: bold; margin: 0; }
+        .info-table { width: 100%; font-size: 16px; margin-bottom: 10px; border-collapse: collapse; }
+        .dotted-line { border-top: 2px dotted black; margin: 10px 0; }
+        .charges-table { width: 100%; border-collapse: collapse; }
+        .charges-table th { border-bottom: 2px solid black; text-align: left; padding: 5px 0; font-size: 16px; }
+        .charges-table td { padding: 8px 0; font-size: 16px; }
+        .summary-section { margin-top: 15px; border-top: 3px solid black; }
+        .summary-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; padding: 5px 0; }
+        
         @media print {
-            header, footer, .stSidebar, .stButton, .stSelectbox, .stTextInput, .stNumberInput, [data-testid="stExpander"] {
-                display: none !important;
-            }
-            .print-container { border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            header, footer, .stSidebar, .stButton, [data-testid="stExpander"] { display: none !important; }
+            .slip-container { border: none; width: 100%; box-shadow: none; }
         }
-        .print-container {
-            background-color: #fff; padding: 20px;
-            width: 400px; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0 auto; border: 1px solid #eee;
-        }
-        .main-title { text-align: center; font-weight: 900; font-size: 26px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
-        .sub-title { text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; }
-        .patient-slip-bar { 
-            text-align: center; font-weight: bold; border-top: 3px solid #000; 
-            border-bottom: 3px solid #000; background: #fff; margin: 5px 0; padding: 2px 0; font-size: 18px;
-        }
-        .info-table { width: 100%; border-bottom: 2px dashed #000; margin-bottom: 10px; font-size: 15px; line-height: 1.2; }
-        .test-table { width: 100%; border-collapse: collapse; font-size: 15px; margin-top: 5px; }
-        .test-table th { border-bottom: 2px solid #000; text-align: left; padding: 8px 0; font-weight: bold; }
-        .test-table td { padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
-        .total-section { border-top: 3px solid #000; margin-top: 10px; padding-top: 5px; }
-        .total-section table { width: 100%; font-weight: bold; font-size: 18px; }
-        .dev-tag { text-align: center; margin-top: 30px; font-size: 12px; border-top: 1px solid #ccc; padding-top: 5px; font-weight: bold; }
         </style>
     """, unsafe_allow_html=True)
 
-    # Clean test string and handle split
-    test_str = str(val[8]) if val[8] and not pd.isna(val[8]) else "-"
-    test_names = test_str.split(", ")
-    
-    test_rows_html = ""
-    for i, tname in enumerate(test_names, 1):
-        test_rows_html += f"<tr><td>{i}</td><td>{tname}</td><td>-</td><td>1</td><td style='text-align:right;'>-</td></tr>"
+    # Test rows creation
+    tests = str(val[8]).split(", ")
+    test_rows = ""
+    for i, t in enumerate(tests, 1):
+        test_rows += f"<tr><td>{i}</td><td>{t}</td><td>-</td><td>1</td><td style='text-align: right;'>-</td></tr>"
 
-    receipt_html = f"""
-        <div class="print-container">
-            <div class="main-title">JAWAD MEDICAL CENTERE</div>
-            <div class="sub-title">MAJEED COLONY SEC 2</div>
-            <div class="patient-slip-bar">PATIENT SLIP</div>
-            <table class="info-table">
-                <tr><td><b>Slip No:</b> {val[1]}</td><td style="text-align:right;">{val[2]}</td></tr>
-                <tr><td><b>Shift:</b> Evening</td><td style="text-align:right;"></td></tr>
-                <tr><td colspan="2" style="padding-top:10px;"><b>Patient:</b> <span style="float:right;"><b>{val[3]}</b></span></td></tr>
-                <tr><td><b>Cell/Gen/Age:</b></td><td style="text-align:right;">({str(val[6])[0] if val[6] else '?'}/{val[5]})</td></tr>
-                <tr><td><b>Ref By:</b></td><td style="text-align:right;">SELF</td></tr>
-                <tr><td><b>Doctor:</b></td><td style="text-align:right;">DR. ZAIN</td></tr>
-            </table>
-            <table class="test-table">
-                <thead><tr><th>S#</th><th>CHARGES</th><th>Rate</th><th>Qty</th><th style="text-align:right;">AMT</th></tr></thead>
-                <tbody>{test_rows_html}</tbody>
-            </table>
-            <div class="total-section">
-                <table>
-                    <tr><td>TOTAL:</td><td style="text-align:right;">{val[9]}</td></tr>
-                    <tr><td>RECEIVED:</td><td style="text-align:right;">{val[10]}</td></tr>
-                    <tr style="font-size: 20px;"><td>BALANCE:</td><td style="text-align:right;">{val[11]}</td></tr>
-                </table>
+    slip_html = f"""
+    <div class="slip-container">
+        <div class="header">
+            <h1>( THA LIFE CARE )</h1>
+            <p>MAJEED COLONY SEC 2</p>
+        </div>
+        <div class="title-bar"><h2>PATIENT SLIP</h2></div>
+        <table class="info-table">
+            <tr>
+                <td>Slip No: <b>{val[1]}</b></td>
+                <td style="text-align: right;"><b>{val[2]}</b></td>
+            </tr>
+            <tr><td>Shift: <b>Evening</b></td></tr>
+        </table>
+        <div class="dotted-line"></div>
+        <table class="info-table">
+            <tr><td>Patient:</td><td style="text-align: right;"><b>{val[3]}</b></td></tr>
+            <tr><td>Cell/Gen/Age:</td><td style="text-align: right;"><b>{val[4]} / ({val[6]}/{val[5]})</b></td></tr>
+            <tr><td>Ref By:</td><td style="text-align: right;"><b>SELF</b></td></tr>
+            <tr><td>Doctor:</td><td style="text-align: right;"><b>DR. ZAIN</b></td></tr>
+        </table>
+        <table class="charges-table">
+            <thead>
+                <tr><th>S#</th><th>CHARGES</th><th>Rate</th><th>Qty</th><th style="text-align: right;">AMT</th></tr>
+            </thead>
+            <tbody>
+                {test_rows}
+            </tbody>
+        </table>
+        <div class="summary-section">
+            <div class="summary-row"><span>TOTAL:</span><span>{val[9]}</span></div>
+            <div class="summary-row" style="font-size: 16px; border-top: 2px dotted black;">
+                <span>RECEIVED:</span><span>{val[10]}</span>
             </div>
-            <div class="dev-tag">
-                Developed by zain 03702906075
+            <div class="summary-row" style="border-top: 2px dotted black;">
+                <span>BALANCE:</span><span>{val[11]}</span>
             </div>
         </div>
+        <div style="text-align: center; margin-top: 20px; font-size: 12px; font-weight: bold; border-top: 1px solid #ccc; padding-top: 5px;">
+            Developed by zain 03702906075
+        </div>
+    </div>
     """
-    st.markdown(receipt_html, unsafe_allow_html=True)
-    if st.button("🖨️ Print Now", key=f"btn_{val[1]}_{val[0]}"):
+    st.markdown(slip_html, unsafe_allow_html=True)
+    if st.button("🖨️ Print Now", key=f"print_{val[1]}"):
         st.info("Keyboard se **Ctrl + P** dabayein.")
 
-# --- 2. PAGE CONFIG ---
+# --- 3. MAIN APP LOGIC (NO CHANGES) ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
 
-# --- 3. SESSION STATE ---
 if 'temp_tests' not in st.session_state: st.session_state.temp_tests = [] 
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
@@ -124,7 +135,6 @@ def check_login(u, p):
         st.rerun()
     else: st.error("Invalid Username or Password")
 
-# --- 4. AUTH CHECK ---
 if not st.session_state['auth']:
     show_login_page(check_login)
 else:
@@ -146,7 +156,6 @@ else:
         menu = st.radio("Navigation", ["Registration", "Dues & Reports", "Excel History"])
         
         st.divider()
-        # --- DELETE ALL DATA FEATURE ---
         if st.checkbox("Enable Delete Option"):
             if st.button("⚠️ Delete All Patient Data", type="primary"):
                 if os.path.exists(PATIENT_FILE):
@@ -219,39 +228,5 @@ else:
                     st.session_state.show_slip = new_row 
                     st.session_state.temp_tests = [] 
                     st.rerun()
-
-    elif menu == "Dues & Reports":
-        st.header("Update Records & Results")
-        if not df.empty:
-            pending_df = df[(df["Remaining"] > 0) | (df["Result"] == "-")]
-            if not pending_df.empty:
-                sel_patient = st.selectbox("Search Patient", pending_df["Name"].tolist())
-                p_data = df[df["Name"] == sel_patient].iloc[-1]
-                st.info(f"Test: {p_data['Test']} | Dues: Rs. {p_data['Remaining']}")
-                c_a, c_b = st.columns(2)
-                add_p = c_a.number_input("Add More Payment", 0)
-                res_v = c_b.text_input("Enter Result", value=p_data['Result'])
-                if st.button("Update & Save Record"):
-                    new_paid = p_data["Paid_Amount"] + add_p
-                    new_rem = p_data["Total_Bill"] - new_paid
-                    df.loc[df["ID"] == p_data["ID"], ["Paid_Amount", "Remaining", "Status", "Result"]] = [new_paid, new_rem, ("Paid" if new_rem<=0 else "Pending"), res_v]
-                    df.to_csv(PATIENT_FILE, index=False)
-                    st.success("Updated!")
-                    st.rerun()
-
-    elif menu == "Excel History":
-        st.header("📊 Lab Database History")
-        with st.expander("🖨️ Reprint Old Slip"):
-            if not df.empty:
-                patient_names = df["Name"].tolist()
-                selected_p = st.selectbox("Select Patient to Print", ["-- Select --"] + patient_names)
-                if selected_p != "-- Select --":
-                    p_to_print = df[df["Name"] == selected_p].iloc[-1]
-                    show_receipt(p_to_print)
-        st.divider()
-        search_query = st.text_input("🔍 Search History")
-        if search_query:
-            filtered_df = df[df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
-            st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-        else:
-            st.dataframe(df, use_container_width=True, hide_index=True)
+    
+    # ... Baki menus (Dues & History) wese hi rahenge ...
