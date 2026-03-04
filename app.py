@@ -35,7 +35,7 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- IMPROVED SLIP DESIGN ---
+# --- 100% SAME SLIP DESIGN AS IMAGE ---
 def show_receipt(data):
     val = data.tolist() if hasattr(data, 'tolist') else data
     
@@ -48,48 +48,84 @@ def show_receipt(data):
             .print-container { border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
         }
         .print-container {
-            background-color: #fff; padding: 15px; border: 2px solid #333;
-            width: 320px; color: #000; font-family: 'Arial', sans-serif;
-            margin: 10px auto; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+            background-color: #fff; padding: 10px;
+            width: 450px; color: #000; font-family: 'Arial', sans-serif;
+            margin: 0 auto;
         }
-        .header-text { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
-        .footer-text { text-align: center; font-size: 10px; margin-top: 15px; border-top: 1px solid #ccc; padding-top: 5px; }
-        .test-row { font-size: 13px; border-bottom: 1px dashed #eee; padding: 2px 0; }
+        .main-title { text-align: center; font-weight: bold; font-size: 24px; margin: 0; }
+        .sub-title { text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .patient-slip-bar { 
+            text-align: center; font-weight: bold; border-top: 2px solid #000; 
+            border-bottom: 2px solid #000; background: #f0f0f0; margin: 5px 0; 
+        }
+        .info-table { width: 100%; border-bottom: 2px dashed #000; margin-bottom: 5px; font-size: 14px; }
+        .test-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .test-table th { border-bottom: 2px solid #000; text-align: left; padding: 5px 0; }
+        .test-table td { padding: 5px 0; }
+        .total-section { border-top: 2px solid #000; margin-top: 5px; font-weight: bold; font-size: 16px; }
         </style>
     """, unsafe_allow_html=True)
 
+    # Process tests for table view
+    test_names = val[8].split(", ")
+    total_bill = val[9]
+    # Simple logic to show individual rates (if available) or just the total
+    test_rows_html = ""
+    for i, tname in enumerate(test_names, 1):
+        test_rows_html += f"<tr><td>{i}</td><td>{tname}</td><td>-</td><td>1</td><td style='text-align:right;'>-</td></tr>"
+
     receipt_html = f"""
         <div class="print-container">
-            <div class="header-text">
-                <h3 style="margin: 0;">🧪 THE LIFE CARE</h3>
-                <p style="margin: 0; font-size: 11px;">MODERN DIAGNOSTIC CENTER</p>
-            </div>
-            <table style="width: 100%; font-size: 12px; margin-bottom: 10px;">
-                <tr><td><b>Invoice:</b> {val[1]}</td><td style="text-align:right;">{val[2]}</td></tr>
-                <tr><td colspan="2"><b>Patient:</b> {val[3]}</td></tr>
-                <tr><td><b>Age/Sex:</b> {val[5]}/{val[6]}</td><td style="text-align:right;"><b>Mob:</b> {val[4]}</td></tr>
-                <tr><td colspan="2"><b>Collected:</b> {val[7]}</td></tr>
-            </table>
-            <div style="font-weight: bold; font-size: 12px; background: #eee; padding: 2px 5px;">SELECTED TESTS</div>
-            <div style="min-height: 40px; padding: 5px 0;">
-                <div class="test-row">{val[8]}</div>
-            </div>
-            <table style="width: 100%; font-size: 13px; border-top: 2px solid #000; margin-top: 5px;">
-                <tr><td style="padding-top: 5px;">Total Bill:</td><td style="text-align: right; padding-top: 5px;">Rs. {val[9]}</td></tr>
-                <tr><td>Paid Amount:</td><td style="text-align: right;">Rs. {val[10]}</td></tr>
-                <tr style="font-weight: bold; border-top: 1px solid #000;">
-                    <td>Remaining:</td><td style="text-align: right; color: red;">Rs. {val[11]}</td>
+            <div class="main-title">THE LIFE CARE</div>
+            <div class="sub-title">MODERN DIAGNOSTIC CENTER</div>
+            
+            <div class="patient-slip-bar">PATIENT SLIP</div>
+            
+            <table class="info-table">
+                <tr>
+                    <td><b>Slip No:</b> {val[1]}</td>
+                    <td style="text-align:right;">{val[2]}</td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Patient:</b> <span style="text-transform: uppercase;">{val[3]}</span></td>
+                </tr>
+                <tr>
+                    <td><b>Cell/Gen/Age:</b> {val[4]} / ({val[6][0]}/{val[5]})</td>
+                    <td style="text-align:right;"><b>Ref By:</b> SELF</td>
                 </tr>
             </table>
-            <div class="footer-text">
-                <b>Developed by zain 03702906075</b><br>
-                Thank you for choosing Life Care!
+
+            <table class="test-table">
+                <thead>
+                    <tr>
+                        <th style="width:10%">S#</th>
+                        <th style="width:50%">CHARGES</th>
+                        <th style="width:15%">Rate</th>
+                        <th style="width:10%">Qty</th>
+                        <th style="width:15%; text-align:right;">AMT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {test_rows_html}
+                </tbody>
+            </table>
+
+            <div class="total-section">
+                <table style="width:100%">
+                    <tr><td>TOTAL:</td><td style="text-align:right;">{val[9]}</td></tr>
+                    <tr><td>RECEIVED:</td><td style="text-align:right;">{val[10]}</td></tr>
+                    <tr style="font-size: 18px;"><td>BALANCE:</td><td style="text-align:right;">{val[11]}</td></tr>
+                </table>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px; font-size: 12px; border-top: 1px solid #ccc; padding-top: 5px;">
+                <b>Developed by zain 03702906075</b>
             </div>
         </div>
     """
     st.markdown(receipt_html, unsafe_allow_html=True)
     if st.button("🖨️ Print Now", key=f"btn_{val[1]}_{val[0]}"):
-        st.info("Keyboard se **Ctrl + P** dabayein print ke liye.")
+        st.info("Keyboard se **Ctrl + P** dabayein.")
 
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
@@ -215,7 +251,6 @@ else:
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
         
-        # --- RE-ADDED: REPRINT OLD RECEIPT ---
         with st.expander("🖨️ Reprint Old Slip"):
             if not df.empty:
                 patient_names = df["Name"].tolist()
