@@ -6,6 +6,7 @@ import pandas as pd
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def get_full_data():
+    """Sheet1 se patients ka record parhna"""
     try:
         return conn.read(worksheet="Sheet1", ttl=0).dropna(how="all")
     except:
@@ -13,24 +14,25 @@ def get_full_data():
         return pd.DataFrame(columns=cols)
 
 def get_tests_list():
+    """Sheet2 se tests ki list parhna"""
     try:
-        # Sheet2 se dropdown list uthana
         return conn.read(worksheet="Sheet2", ttl=0).dropna(how="all")
     except:
+        # Agar sheet khali ho to default column return karein
         return pd.DataFrame(columns=["Test_Name", "Rate"])
 
 def save_record_online(new_row_df):
+    """Sheet1 mein naya record save karna"""
     existing_data = get_full_data()
-    # Yahan 'updated_data' naam hai
     updated_data = pd.concat([existing_data, new_row_df], ignore_index=True)
-    # Neechay bhi 'updated_data' hi hona chahiye
+    # Fix: Data pehle, Worksheet baad mein
     conn.update(data=updated_data, worksheet="Sheet1")
     st.cache_data.clear()
 
 def save_test_online(new_test_df):
+    """Sheet2 mein naya test save karna"""
     existing_tests = get_tests_list()
-    # Yahan 'updated_tests' naam hai
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
-    # Neechay bhi 'updated_tests' hi hona chahiye
+    # Fix: Data pehle, Worksheet baad mein
     conn.update(data=updated_tests, worksheet="Sheet2")
     st.cache_data.clear()
