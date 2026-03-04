@@ -35,7 +35,7 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- 100% SAME SLIP DESIGN AS IMAGE (ERROR FIXED) ---
+# --- 100% SAME SLIP DESIGN (FIXED ERROR) ---
 def show_receipt(data):
     val = data.tolist() if hasattr(data, 'tolist') else data
     
@@ -66,8 +66,8 @@ def show_receipt(data):
         </style>
     """, unsafe_allow_html=True)
 
-    # --- ERROR FIX: Checking if val[8] is string before split ---
-    test_str = str(val[8]) if val[8] and not pd.isna(val[8]) else "N/A"
+    # --- ERROR FIX: split() crash bachane ke liye ---
+    test_str = str(val[8]) if val[8] and not pd.isna(val[8]) else "-"
     test_names = test_str.split(", ")
     
     test_rows_html = ""
@@ -78,38 +78,16 @@ def show_receipt(data):
         <div class="print-container">
             <div class="main-title">THE LIFE CARE</div>
             <div class="sub-title">MODERN DIAGNOSTIC CENTER</div>
-            
             <div class="patient-slip-bar">PATIENT SLIP</div>
-            
             <table class="info-table">
-                <tr>
-                    <td><b>Slip No:</b> {val[1]}</td>
-                    <td style="text-align:right;">{val[2]}</td>
-                </tr>
-                <tr>
-                    <td colspan="2"><b>Patient:</b> <span style="text-transform: uppercase;">{val[3]}</span></td>
-                </tr>
-                <tr>
-                    <td><b>Cell/Gen/Age:</b> {val[4]} / ({str(val[6])[0] if val[6] else '?'}/{val[5]})</td>
-                    <td style="text-align:right;"><b>Ref By:</b> SELF</td>
-                </tr>
+                <tr><td><b>Slip No:</b> {val[1]}</td><td style="text-align:right;">{val[2]}</td></tr>
+                <tr><td colspan="2"><b>Patient:</b> <span style="text-transform: uppercase;">{val[3]}</span></td></tr>
+                <tr><td><b>Cell/Gen/Age:</b> {val[4]} / ({str(val[6])[0] if val[6] else '?'}/{val[5]})</td><td style="text-align:right;"><b>Ref By:</b> SELF</td></tr>
             </table>
-
             <table class="test-table">
-                <thead>
-                    <tr>
-                        <th style="width:10%">S#</th>
-                        <th style="width:50%">CHARGES</th>
-                        <th style="width:15%">Rate</th>
-                        <th style="width:10%">Qty</th>
-                        <th style="width:15%; text-align:right;">AMT</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {test_rows_html}
-                </tbody>
+                <thead><tr><th>S#</th><th>CHARGES</th><th>Rate</th><th>Qty</th><th style="text-align:right;">AMT</th></tr></thead>
+                <tbody>{test_rows_html}</tbody>
             </table>
-
             <div class="total-section">
                 <table style="width:100%">
                     <tr><td>TOTAL:</td><td style="text-align:right;">{val[9]}</td></tr>
@@ -117,7 +95,6 @@ def show_receipt(data):
                     <tr style="font-size: 18px;"><td>BALANCE:</td><td style="text-align:right;">{val[11]}</td></tr>
                 </table>
             </div>
-            
             <div style="text-align: center; margin-top: 20px; font-size: 12px; border-top: 1px solid #ccc; padding-top: 5px;">
                 <b>Developed by zain 03702906075</b>
             </div>
@@ -162,6 +139,16 @@ else:
         st.metric("Aaj Ke Dues", f"Rs. {total_dues}")
         st.divider()
         menu = st.radio("Navigation", ["Registration", "Dues & Reports", "Excel History"])
+        
+        st.divider()
+        # --- NEW: DELETE DATA BUTTON ---
+        if st.checkbox("Enable Delete Option"):
+            if st.button("⚠️ Delete All Patient Data", type="primary"):
+                if os.path.exists(PATIENT_FILE):
+                    os.remove(PATIENT_FILE)
+                    st.success("Sabh data delete ho gaya!")
+                    st.rerun()
+
         if st.button("Logout"):
             st.session_state['auth'] = False
             st.rerun()
@@ -195,7 +182,6 @@ else:
             p_name = r1c1.text_input("Patient Name")
             p_mobile = r1c2.text_input("Mobile No", value=st.session_state.saved_mobile)
             st.session_state.saved_mobile = p_mobile
-            
             p_inv = r1c3.text_input("Invoice #", value=f"INV-{datetime.now().strftime('%H%M%S')}")
             r2c1, r2c2, r2c3 = st.columns([1, 1, 2])
             p_age = r2c1.number_input("Age", 1, 120, value=25)
@@ -250,7 +236,6 @@ else:
 
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
-        
         with st.expander("🖨️ Reprint Old Slip"):
             if not df.empty:
                 patient_names = df["Name"].tolist()
@@ -258,7 +243,6 @@ else:
                 if selected_p != "-- Select --":
                     p_to_print = df[df["Name"] == selected_p].iloc[-1]
                     show_receipt(p_to_print)
-        
         st.divider()
         search_query = st.text_input("🔍 Search History")
         if search_query:
