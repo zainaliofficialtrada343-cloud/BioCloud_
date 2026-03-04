@@ -9,10 +9,16 @@ PATIENT_FILE = "data_db.csv"
 TESTS_FILE = "tests_db.csv"
 
 def get_full_data():
+    # Adding extra columns to the structure to support new fields
+    cols = ["ID", "Invoice", "Date", "Name", "Mobile", "Age", "Gender", "Collected", "Test", "Total_Bill", "Paid_Amount", "Remaining", "Result", "Unit", "Status"]
     if os.path.exists(PATIENT_FILE):
-        return pd.read_csv(PATIENT_FILE)
+        df = pd.read_csv(PATIENT_FILE)
+        # Check if new columns exist, if not add them to prevent errors
+        for c in cols:
+            if c not in df.columns:
+                df[c] = "-"
+        return df
     else:
-        cols = ["ID", "Date", "Name", "Age", "Gender", "Test", "Total_Bill", "Paid_Amount", "Remaining", "Result", "Unit", "Status"]
         return pd.DataFrame(columns=cols)
 
 def get_tests_list():
@@ -33,37 +39,40 @@ def save_test_local(new_test_df):
 
 # --- NEW: SLIP DESIGN FUNCTION ---
 def show_receipt(data):
-    # data can be a list or a pandas series
     val = data.tolist() if hasattr(data, 'tolist') else data
+    # Map data to variables for clarity (adjusting index based on our cols)
     st.markdown(f"""
-        <div style="background-color: white; padding: 20px; border: 2px dashed #333; width: 300px; color: black; font-family: 'Courier New', monospace; margin: auto;">
-            <div style="text-align: center; font-weight: bold; font-size: 20px;">🧪 BIOCLOUD LAB</div>
-            <div style="text-align: center; font-size: 10px;">Modern Diagnostic Center</div>
-            <hr style="border-top: 1px solid black;">
-            <div style="font-size: 12px;">
-                <b>ID:</b> {val[0]} <br>
-                <b>Date:</b> {val[1]} <br>
-                <b>Name:</b> {val[2]} <br>
-                <b>Age/Sex:</b> {val[3]} / {val[4]}
+        <div style="background-color: white; padding: 15px; border: 1px solid #000; width: 320px; color: black; font-family: 'Arial', sans-serif; margin: auto;">
+            <div style="text-align: center; font-weight: bold; font-size: 22px; margin-bottom: 2px;">🧪 THE LIFE CARE</div>
+            <div style="text-align: center; font-size: 10px; margin-bottom: 10px;">Modern Diagnostic Center</div>
+            
+            <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                <tr><td style="border: 1px solid #ddd; padding: 3px;"><b>Inv #:</b> {val[1]}</td><td style="border: 1px solid #ddd; padding: 3px;"><b>Date:</b> {val[2]}</td></tr>
+                <tr><td colspan="2" style="border: 1px solid #ddd; padding: 3px;"><b>Name:</b> {val[3]}</td></tr>
+                <tr><td style="border: 1px solid #ddd; padding: 3px;"><b>Mob:</b> {val[4]}</td><td style="border: 1px solid #ddd; padding: 3px;"><b>Age/Sex:</b> {val[5]}/{val[6]}</td></tr>
+                <tr><td colspan="2" style="border: 1px solid #ddd; padding: 3px;"><b>Collected From:</b> {val[7]}</td></tr>
+            </table>
+
+            <div style="font-size: 12px; font-weight: bold; margin-top: 8px; border-bottom: 1px solid black;">Tests:</div>
+            <div style="font-size: 11px; padding: 5px 0;">{val[8]}</div>
+            
+            <hr style="margin: 5px 0; border-top: 1px dashed black;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold;">
+                <span>Total:</span> <span>Rs. {val[9]}</span>
             </div>
-            <hr style="border-top: 1px solid black;">
-            <div style="font-size: 12px; font-weight: bold;">Tests:</div>
-            <div style="font-size: 11px;">{val[5]}</div>
-            <hr style="border-top: 1px solid black;">
-            <div style="display: flex; justify-content: space-between; font-weight: bold;">
-                <span>Total:</span> <span>Rs. {val[6]}</span>
+            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Paid:</span> <span>Rs. {val[10]}</span>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span>Paid:</span> <span>Rs. {val[7]}</span>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: red; font-weight: bold;">
+                <span>Remaining:</span> <span>Rs. {val[11]}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; color: red;">
-                <span>Balance:</span> <span>Rs. {val[8]}</span>
+
+            <div style="text-align: center; font-size: 10px; margin-top: 15px; border-top: 1px solid black; padding-top: 5px;">
+                <b>Developed by zain 03702906075</b>
             </div>
-            <hr style="border-top: 1px dashed black;">
-            <div style="text-align: center; font-size: 10px;">Software by BioCloud AI</div>
         </div>
     """, unsafe_allow_html=True)
-    st.button("🖨️ Print Receipt", key=f"print_{val[0]}", on_click=lambda: st.write("Browser ka Print (Ctrl+P) use karein"))
+    st.button("🖨️ Print Receipt", key=f"prnt_{val[1]}", on_click=lambda: st.write("Browser ka Print (Ctrl+P) use karein"))
 
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
@@ -91,7 +100,7 @@ else:
     
     df = get_full_data()
     today = str(datetime.now().date())
-    required_cols = ["ID", "Date", "Name", "Age", "Gender", "Test", "Total_Bill", "Paid_Amount", "Remaining", "Result", "Unit", "Status"]
+    required_cols = ["ID", "Invoice", "Date", "Name", "Mobile", "Age", "Gender", "Collected", "Test", "Total_Bill", "Paid_Amount", "Remaining", "Result", "Unit", "Status"]
 
     with st.sidebar:
         st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
@@ -138,10 +147,15 @@ else:
                     st.rerun()
 
         with st.expander("Patient Information", expanded=True):
-            c1, c2, c3 = st.columns([2, 1, 1])
-            p_name = c1.text_input("Patient Name")
-            p_age = c2.number_input("Age", 1, 120, value=25)
-            p_gender = c3.selectbox("Gender", ["Male", "Female", "Other"])
+            r1c1, r1c2, r1c3 = st.columns([2, 1, 1])
+            p_name = r1c1.text_input("Patient Name")
+            p_mobile = r1c2.text_input("Mobile No")
+            p_inv = r1c3.text_input("Invoice #", value=f"INV-{datetime.now().strftime('%H%M%S')}")
+            
+            r2c1, r2c2, r2c3 = st.columns([1, 1, 2])
+            p_age = r2c1.number_input("Age", 1, 120, value=25)
+            p_gender = r2c2.selectbox("Gender", ["Male", "Female", "Other"])
+            p_coll = r2c3.text_input("Collected From", value="Lab")
 
         st.subheader("Add Tests to Bill")
         col_t1, col_t2, col_t3 = st.columns([2, 1, 1])
@@ -169,7 +183,7 @@ else:
                     all_tests_str = ", ".join([t['Test'] for t in st.session_state.temp_tests])
                     rem = total_bill - paid_amt
                     new_id = len(df) + 1
-                    new_row = [new_id, today, p_name, p_age, p_gender, all_tests_str, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
+                    new_row = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, all_tests_str, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
                     
                     save_record_local(pd.DataFrame([new_row], columns=required_cols))
                     st.session_state.show_slip = new_row 
@@ -206,7 +220,6 @@ else:
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
         
-        # --- NEW: PRINT OLD SLIPS SECTION ---
         with st.expander("🖨️ Reprint Old Receipt", expanded=False):
             st.markdown('<div class="login-card">', unsafe_allow_html=True)
             if not df.empty:
