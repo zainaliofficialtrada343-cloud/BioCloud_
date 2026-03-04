@@ -11,15 +11,11 @@ TESTS_FILE = "tests_db.csv"
 def get_full_data():
     cols = ["ID", "Invoice", "Date", "Name", "Mobile", "Age", "Gender", "Collected", "Test", "Total_Bill", "Paid_Amount", "Remaining", "Result", "Unit", "Status"]
     if os.path.exists(PATIENT_FILE):
-        try:
-            df = pd.read_csv(PATIENT_FILE)
-            # Ensure all columns exist
-            for c in cols:
-                if c not in df.columns:
-                    df[c] = "-"
-            return df[cols] # Keep order same
-        except:
-            return pd.DataFrame(columns=cols)
+        df = pd.read_csv(PATIENT_FILE)
+        for c in cols:
+            if c not in df.columns:
+                df[c] = "-"
+        return df
     else:
         return pd.DataFrame(columns=cols)
 
@@ -27,10 +23,7 @@ def get_tests_list():
     if os.path.exists(TESTS_FILE):
         return pd.read_csv(TESTS_FILE)
     else:
-        # Default tests if file not found
-        df_default = pd.DataFrame([{"Test_Name": "CBC", "Rate": 500}, {"Test_Name": "Sugar", "Rate": 200}])
-        df_default.to_csv(TESTS_FILE, index=False)
-        return df_default
+        return pd.DataFrame([{"Test_Name": "CBC", "Rate": 500}, {"Test_Name": "Sugar", "Rate": 200}])
 
 def save_record_local(new_row_df):
     existing_data = get_full_data()
@@ -42,98 +35,88 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- SLIP DESIGN FUNCTION ---
+# --- SLIP DESIGN (FIXED INDEXING) ---
 def show_receipt(data):
-    # 'data' can be a list or a pandas Series
     val = data.tolist() if hasattr(data, 'tolist') else data
     
     st.markdown("""
         <style>
         @media print {
-            header, footer, .stSidebar, .stButton, [data-testid="stExpander"], .stSelectbox {
+            header, footer, .stSidebar, .stButton, .stSelectbox, .stTextInput, .stNumberInput, [data-testid="stExpander"] {
                 display: none !important;
             }
-            .print-container {
-                border: none !important;
-                box-shadow: none !important;
-                width: 100% !important;
-                margin: 0 !important;
-            }
+            .print-container { border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
         }
         .print-container {
-            background-color: #fff;
-            padding: 15px;
-            border: 1px solid #000;
-            width: 320px;
-            color: #000;
-            font-family: 'Arial', sans-serif;
-            margin: 0 auto;
+            background-color: #fff; padding: 20px; border: 1px solid #ccc;
+            width: 350px; color: #000; font-family: 'Courier New', Courier, monospace;
+            margin: 10px auto; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
         }
-        .receipt-table { width: 100%; font-size: 12px; border-collapse: collapse; }
-        .receipt-table td { padding: 3px 0; }
         </style>
     """, unsafe_allow_html=True)
 
+    # val[1]=Invoice, val[2]=Date, val[3]=Name, val[4]=Mobile, val[5]=Age, val[6]=Gender, val[7]=Collected, val[8]=Test
     receipt_html = f"""
         <div class="print-container">
             <div style="text-align: center;">
                 <h2 style="margin: 0;">🧪 THE LIFE CARE</h2>
-                <p style="margin: 0; font-size: 11px;">Modern Diagnostic Center</p>
+                <p style="margin: 0; font-size: 12px;">Modern Diagnostic Center</p>
             </div>
-            <hr style="border-top: 1px solid #000;">
-            <table class="receipt-table">
+            <hr>
+            <table style="width: 100%; font-size: 13px;">
                 <tr><td><b>Inv:</b> {val[1]}</td><td style="text-align:right;"><b>Date:</b> {val[2]}</td></tr>
                 <tr><td colspan="2"><b>Name:</b> {val[3]}</td></tr>
-                <tr><td><b>Age/Sex:</b> {val[5]}/{val[6]}</td><td style="text-align:right;"><b>Mob:</b> {val[4]}</td></tr>
+                <tr><td><b>Mob:</b> {val[4]}</td><td style="text-align:right;"><b>Age/Sex:</b> {val[5]}/{val[6]}</td></tr>
+                <tr><td colspan="2"><b>From:</b> {val[7]}</td></tr>
             </table>
-            <div style="margin-top: 10px; font-weight: bold; border-bottom: 1px solid #000;">TESTS</div>
-            <div style="font-size: 12px; padding: 5px 0;">{val[8]}</div>
+            <div style="margin-top: 10px; font-weight: bold; border-bottom: 1px solid #000;">TESTS:</div>
+            <div style="font-size: 13px; padding: 5px 0;">{val[8]}</div>
             <hr style="border-top: 1px dashed #000;">
-            <table class="receipt-table">
-                <tr><td>Total:</td><td style="text-align: right;">Rs. {val[9]}</td></tr>
+            <table style="width: 100%; font-size: 13px;">
+                <tr><td>Total Bill:</td><td style="text-align: right;">Rs. {val[9]}</td></tr>
                 <tr><td>Paid:</td><td style="text-align: right;">Rs. {val[10]}</td></tr>
-                <tr style="font-weight: bold;"><td>Remaining:</td><td style="text-align: right;">Rs. {val[11]}</td></tr>
+                <tr style="color: red; font-weight: bold;"><td>Remaining:</td><td style="text-align: right;">Rs. {val[11]}</td></tr>
             </table>
-            <div style="text-align: center; font-size: 10px; margin-top: 15px;">
+            <div style="text-align: center; font-size: 10px; margin-top: 20px;">
                 <b>Developed by zain 03702906075</b>
             </div>
         </div>
     """
     st.markdown(receipt_html, unsafe_allow_html=True)
-    
-    if st.button("🖨️ Print Receipt", key=f"print_{val[1]}"):
-        st.info("Press Ctrl + P to print the receipt.")
+    if st.button("🖨️ Print Receipt", key=f"btn_{val[1]}"):
+        st.info("Press Ctrl + P to print.")
 
-# --- PAGE CONFIG ---
+# --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
 
+# --- 3. SESSION STATE ---
 if 'temp_tests' not in st.session_state: st.session_state.temp_tests = [] 
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
+if 'saved_mobile' not in st.session_state: st.session_state.saved_mobile = ""
 
 def check_login(u, p):
     if u == "admin" and p == "lab786":
         st.session_state['auth'] = True
         st.rerun()
-    else:
-        st.error("Invalid Username or Password")
+    else: st.error("Invalid Username or Password")
 
+# --- 4. AUTH CHECK ---
 if not st.session_state['auth']:
     show_login_page(check_login)
 else:
     local_css("style.css")
     df = get_full_data()
-    today = datetime.now().strftime('%Y-%m-%d')
+    today = str(datetime.now().date())
     required_cols = ["ID", "Invoice", "Date", "Name", "Mobile", "Age", "Gender", "Collected", "Test", "Total_Bill", "Paid_Amount", "Remaining", "Result", "Unit", "Status"]
 
     with st.sidebar:
         st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
-        if not df.empty:
+        if not df.empty and 'Date' in df.columns:
             cash_df = df[df['Date'] == today]
             total_cash = pd.to_numeric(cash_df['Paid_Amount'], errors='coerce').sum()
             total_dues = pd.to_numeric(cash_df['Remaining'], errors='coerce').sum()
-        else:
-            total_cash, total_dues = 0, 0
+        else: total_cash, total_dues = 0, 0
         st.metric("Aaj Ka Cash", f"Rs. {total_cash}")
         st.metric("Aaj Ke Dues", f"Rs. {total_dues}")
         st.divider()
@@ -150,11 +133,11 @@ else:
             if st.button("Register Another Patient"):
                 st.session_state.show_slip = None
                 st.rerun()
-            st.stop() # Stop further UI rendering to focus on receipt
+            st.divider()
 
         tdf = get_tests_list()
         test_options = sorted(tdf["Test_Name"].unique().tolist()) if not tdf.empty else []
-        test_rate_dict = dict(zip(tdf["Test_Name"], tdf["Rate"]))
+        test_rate_dict = dict(zip(tdf["Test_Name"], tdf["Rate"])) if not tdf.empty else {}
 
         with st.expander("➕ Add New Test Type"):
             c_n1, c_n2, c_n3 = st.columns([2, 1, 1])
@@ -169,10 +152,11 @@ else:
         with st.expander("Patient Information", expanded=True):
             r1c1, r1c2, r1c3 = st.columns([2, 1, 1])
             p_name = r1c1.text_input("Patient Name")
-            p_mobile = r1c2.text_input("Mobile No")
-            # AUTO INVOICE logic
-            p_inv = r1c3.text_input("Invoice #", value=f"INV-{datetime.now().strftime('%d%H%M%S')}")
+            # Yahan mobile number auto-save ho raha hai
+            p_mobile = r1c2.text_input("Mobile No", value=st.session_state.saved_mobile)
+            st.session_state.saved_mobile = p_mobile
             
+            p_inv = r1c3.text_input("Invoice #", value=f"INV-{datetime.now().strftime('%H%M%S')}")
             r2c1, r2c2, r2c3 = st.columns([1, 1, 2])
             p_age = r2c1.number_input("Age", 1, 120, value=25)
             p_gender = r2c2.selectbox("Gender", ["Male", "Female", "Other"])
@@ -193,7 +177,6 @@ else:
             total_bill = sum(t['Rate'] for t in st.session_state.temp_tests)
             for i, t in enumerate(st.session_state.temp_tests):
                 st.write(f"{i+1}. ✅ {t['Test']} --- Rs. {t['Rate']}")
-            
             paid_amt = st.number_input("Paid Amount", 0)
             if st.button("💾 Final Save Record", use_container_width=True):
                 if p_name and st.session_state.temp_tests:
@@ -205,8 +188,6 @@ else:
                     st.session_state.show_slip = new_row 
                     st.session_state.temp_tests = [] 
                     st.rerun()
-                else:
-                    st.warning("Please enter name and add at least one test.")
 
     elif menu == "Dues & Reports":
         st.header("Update Records & Results")
@@ -226,12 +207,12 @@ else:
                     df.to_csv(PATIENT_FILE, index=False)
                     st.success("Updated!")
                     st.rerun()
-            else:
-                st.success("No pending records!")
 
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
-        if not df.empty:
+        search_query = st.text_input("🔍 Search History")
+        if search_query:
+            filtered_df = df[df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
+            st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+        else:
             st.dataframe(df, use_container_width=True, hide_index=True)
-            csv_data = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Download Excel (CSV)", data=csv_data, file_name="lab_history.csv", mime="text/csv")
