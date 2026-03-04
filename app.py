@@ -35,7 +35,7 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- SLIP DESIGN (FIXED INDEXING) ---
+# --- IMPROVED SLIP DESIGN ---
 def show_receipt(data):
     val = data.tolist() if hasattr(data, 'tolist') else data
     
@@ -48,43 +48,48 @@ def show_receipt(data):
             .print-container { border: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
         }
         .print-container {
-            background-color: #fff; padding: 20px; border: 1px solid #ccc;
-            width: 350px; color: #000; font-family: 'Courier New', Courier, monospace;
+            background-color: #fff; padding: 15px; border: 2px solid #333;
+            width: 320px; color: #000; font-family: 'Arial', sans-serif;
             margin: 10px auto; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
         }
+        .header-text { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
+        .footer-text { text-align: center; font-size: 10px; margin-top: 15px; border-top: 1px solid #ccc; padding-top: 5px; }
+        .test-row { font-size: 13px; border-bottom: 1px dashed #eee; padding: 2px 0; }
         </style>
     """, unsafe_allow_html=True)
 
-    # val[1]=Invoice, val[2]=Date, val[3]=Name, val[4]=Mobile, val[5]=Age, val[6]=Gender, val[7]=Collected, val[8]=Test
     receipt_html = f"""
         <div class="print-container">
-            <div style="text-align: center;">
-                <h2 style="margin: 0;">🧪 THE LIFE CARE</h2>
-                <p style="margin: 0; font-size: 12px;">Modern Diagnostic Center</p>
+            <div class="header-text">
+                <h3 style="margin: 0;">🧪 THE LIFE CARE</h3>
+                <p style="margin: 0; font-size: 11px;">MODERN DIAGNOSTIC CENTER</p>
             </div>
-            <hr>
-            <table style="width: 100%; font-size: 13px;">
-                <tr><td><b>Inv:</b> {val[1]}</td><td style="text-align:right;"><b>Date:</b> {val[2]}</td></tr>
-                <tr><td colspan="2"><b>Name:</b> {val[3]}</td></tr>
-                <tr><td><b>Mob:</b> {val[4]}</td><td style="text-align:right;"><b>Age/Sex:</b> {val[5]}/{val[6]}</td></tr>
-                <tr><td colspan="2"><b>From:</b> {val[7]}</td></tr>
+            <table style="width: 100%; font-size: 12px; margin-bottom: 10px;">
+                <tr><td><b>Invoice:</b> {val[1]}</td><td style="text-align:right;">{val[2]}</td></tr>
+                <tr><td colspan="2"><b>Patient:</b> {val[3]}</td></tr>
+                <tr><td><b>Age/Sex:</b> {val[5]}/{val[6]}</td><td style="text-align:right;"><b>Mob:</b> {val[4]}</td></tr>
+                <tr><td colspan="2"><b>Collected:</b> {val[7]}</td></tr>
             </table>
-            <div style="margin-top: 10px; font-weight: bold; border-bottom: 1px solid #000;">TESTS:</div>
-            <div style="font-size: 13px; padding: 5px 0;">{val[8]}</div>
-            <hr style="border-top: 1px dashed #000;">
-            <table style="width: 100%; font-size: 13px;">
-                <tr><td>Total Bill:</td><td style="text-align: right;">Rs. {val[9]}</td></tr>
-                <tr><td>Paid:</td><td style="text-align: right;">Rs. {val[10]}</td></tr>
-                <tr style="color: red; font-weight: bold;"><td>Remaining:</td><td style="text-align: right;">Rs. {val[11]}</td></tr>
+            <div style="font-weight: bold; font-size: 12px; background: #eee; padding: 2px 5px;">SELECTED TESTS</div>
+            <div style="min-height: 40px; padding: 5px 0;">
+                <div class="test-row">{val[8]}</div>
+            </div>
+            <table style="width: 100%; font-size: 13px; border-top: 2px solid #000; margin-top: 5px;">
+                <tr><td style="padding-top: 5px;">Total Bill:</td><td style="text-align: right; padding-top: 5px;">Rs. {val[9]}</td></tr>
+                <tr><td>Paid Amount:</td><td style="text-align: right;">Rs. {val[10]}</td></tr>
+                <tr style="font-weight: bold; border-top: 1px solid #000;">
+                    <td>Remaining:</td><td style="text-align: right; color: red;">Rs. {val[11]}</td>
+                </tr>
             </table>
-            <div style="text-align: center; font-size: 10px; margin-top: 20px;">
-                <b>Developed by zain 03702906075</b>
+            <div class="footer-text">
+                <b>Developed by zain 03702906075</b><br>
+                Thank you for choosing Life Care!
             </div>
         </div>
     """
     st.markdown(receipt_html, unsafe_allow_html=True)
-    if st.button("🖨️ Print Receipt", key=f"btn_{val[1]}"):
-        st.info("Press Ctrl + P to print.")
+    if st.button("🖨️ Print Now", key=f"btn_{val[1]}_{val[0]}"):
+        st.info("Keyboard se **Ctrl + P** dabayein print ke liye.")
 
 # --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
@@ -152,7 +157,6 @@ else:
         with st.expander("Patient Information", expanded=True):
             r1c1, r1c2, r1c3 = st.columns([2, 1, 1])
             p_name = r1c1.text_input("Patient Name")
-            # Yahan mobile number auto-save ho raha hai
             p_mobile = r1c2.text_input("Mobile No", value=st.session_state.saved_mobile)
             st.session_state.saved_mobile = p_mobile
             
@@ -210,6 +214,17 @@ else:
 
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
+        
+        # --- RE-ADDED: REPRINT OLD RECEIPT ---
+        with st.expander("🖨️ Reprint Old Slip"):
+            if not df.empty:
+                patient_names = df["Name"].tolist()
+                selected_p = st.selectbox("Select Patient to Print", ["-- Select --"] + patient_names)
+                if selected_p != "-- Select --":
+                    p_to_print = df[df["Name"] == selected_p].iloc[-1]
+                    show_receipt(p_to_print)
+        
+        st.divider()
         search_query = st.text_input("🔍 Search History")
         if search_query:
             filtered_df = df[df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
