@@ -35,37 +35,78 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- 2. CLEAN RECEIPT FUNCTION ---
+# --- 2. CLEAN RECEIPT FUNCTION (80mm Thermal Printer Optimized) ---
 def show_receipt(val):
     v = val.tolist() if hasattr(val, 'tolist') else val
     try:
-        if os.path.exists("invoice_template.html"):
-            with open("invoice_template.html", "r") as f:
-                template = f.read()
-            
-            tests_list = str(v[8]).split(", ")
-            test_html = ""
-            for t in tests_list:
-                # Qty aur Amt settings yahan hain
-                test_html += f"<tr><td style='padding:5px;'>{t}</td><td class='amt-center'>1</td><td style='text-align:right; padding:5px;'>-</td></tr>"
+        # Custom CSS for 80mm Terminal Style Print
+        receipt_html = f"""
+        <style>
+            @media print {{
+                body * {{ visibility: hidden; }}
+                .receipt-box, .receipt-box * {{ visibility: visible; }}
+                .receipt-box {{ position: absolute; left: 0; top: 0; width: 80mm; }}
+                .no-print {{ display: none !important; }}
+            }}
+            .receipt-box {{
+                width: 75mm;
+                padding: 10px;
+                font-family: 'Courier New', Courier, monospace;
+                border: 1px dashed #000;
+                background-color: #fff;
+                color: #000;
+                margin-bottom: 20px;
+            }}
+            .r-bold {{ font-weight: bold; font-size: 16px; text-transform: uppercase; }}
+            .r-header {{ text-align: center; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; }}
+            .r-text {{ font-size: 13px; margin: 2px 0; }}
+            .r-table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }}
+            .r-table th {{ border-bottom: 1px dashed #000; text-align: left; }}
+            .r-total {{ border-top: 1px solid #000; margin-top: 10px; padding-top: 5px; font-weight: bold; }}
+        </style>
 
-            final_invoice = template.replace("{{invoice}}", str(v[1])) \
-                                   .replace("{{date}}", str(v[2])) \
-                                   .replace("{{name}}", str(v[3])) \
-                                   .replace("{{mobile}}", str(v[4])) \
-                                   .replace("{{age}}", str(v[5])) \
-                                   .replace("{{gender}}", str(v[6])) \
-                                   .replace("{{test_rows}}", test_html) \
-                                   .replace("{{total}}", str(v[9])) \
-                                   .replace("{{paid}}", str(v[10])) \
-                                   .replace("{{balance}}", str(v[11]))
-
-            st.markdown(final_invoice, unsafe_allow_html=True)
-            # Print Button added for easier access
-            st.button("Click here to Print (Ctrl+P shortcut)", on_click=None)
+        <div class="receipt-box">
+            <div class="r-header">
+                <div class="r-bold">( THE LIFE CARE )</div>
+                <div class="r-text">MAJEED COLONY SEC 2, KARACHI</div>
+                <div class="r-text">0370-2906075</div>
+            </div>
             
-        else:
-            st.error("Error: 'invoice_template.html' nahi mili!")
+            <div class="r-text"><b>Inv:</b> {v[1]} <span style="float:right;"><b>Date:</b> {v[2]}</span></div>
+            <div class="r-text"><b>Name:</b> {v[3]}</div>
+            <div class="r-text"><b>Age/Gen:</b> {v[5]} / {v[6]}</div>
+            <div class="r-text"><b>Mobile:</b> {v[4]}</div>
+            <hr style="border-top: 1px dashed #000;">
+
+            <table class="r-table">
+                <thead>
+                    <tr><th>Description</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Amt</th></tr>
+                </thead>
+                <tbody>
+        """
+        
+        tests_list = str(v[8]).split(", ")
+        for t in tests_list:
+            receipt_html += f"<tr><td>{t}</td><td style='text-align:center;'>1</td><td style='text-align:right;'>-</td></tr>"
+
+        receipt_html += f"""
+                </tbody>
+            </table>
+            
+            <div class="r-total">
+                <div class="r-text">TOTAL BILL: <span style="float:right;">Rs. {v[9]}</span></div>
+                <div class="r-text">PAID AMOUNT: <span style="float:right;">Rs. {v[10]}</span></div>
+                <div class="r-text" style="font-size: 15px;">BALANCE: <span style="float:right;">Rs. {v[11]}</span></div>
+            </div>
+            
+            <div style="text-align:center; margin-top:15px; font-size:11px; border-top: 1px solid #000; padding-top: 5px;">
+                Developed by Zain - 03702906075<br>*** Software System ***
+            </div>
+        </div>
+        """
+        
+        st.markdown(receipt_html, unsafe_allow_html=True)
+        st.button("Print Slip (Ctrl+P)", help="Click and then press Ctrl+P on keyboard")
             
     except Exception as e:
         st.error(f"Slip display karne mein masla: {e}")
@@ -167,7 +208,6 @@ else:
         if st.session_state.temp_tests:
             st.markdown("### Selected Tests")
             for i, t in enumerate(st.session_state.temp_tests):
-                # --- DELETE TEST LOGIC ADDED ---
                 cols = st.columns([4, 1])
                 cols[0].write(f"{i+1}. ✅ {t['Test']} --- Rs. {t['Rate']}")
                 if cols[1].button("❌", key=f"del_{i}"):
@@ -190,7 +230,6 @@ else:
     elif menu == "Dues & Reports":
         st.header("Update Records & Results")
         if not df.empty:
-            # --- ONLY PENDING FILTER ADDED ---
             pending_df = df[df["Status"] == "Pending"]
             if not pending_df.empty:
                 sel_patient = st.selectbox("Search Patient", pending_df["Name"].tolist())
@@ -217,7 +256,7 @@ else:
                 selected_p = st.selectbox("Select Patient to Print", ["-- Select --"] + patient_names)
                 if selected_p != "-- Select --":
                     p_to_print = df[df["Name"] == selected_p].iloc[-1]
-                    show_receipt(p_to_print) # Yeh function print button ke saath khulega
+                    show_receipt(p_to_print) 
         st.divider()
         search_query = st.text_input("🔍 Search History")
         if search_query:
