@@ -88,7 +88,7 @@ else:
         st.header("New Patient Registration")
         if st.session_state.show_slip:
             st.success("✅ Record Saved!")
-            # Receipt helper function call
+            # Receipt helper call (ab ye receipt_design.py se chalega)
             show_receipt(st.session_state.show_slip)
             if st.button("Register Another Patient"):
                 st.session_state.show_slip = None
@@ -147,7 +147,6 @@ else:
                     all_tests_str = ", ".join([t['Test'] for t in st.session_state.temp_tests])
                     rem = total_bill - paid_amt
                     new_id = len(df) + 1
-                    # Data list for the record
                     data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, all_tests_str, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
                     save_record_local(pd.DataFrame([data_list], columns=required_cols))
                     st.session_state.show_slip = data_list 
@@ -183,6 +182,7 @@ else:
                 selected_p = st.selectbox("Select Patient to Print", ["-- Select --"] + patient_names)
                 if selected_p != "-- Select --":
                     p_to_print = df[df["Name"] == selected_p].iloc[-1]
+                    # Ensure data is passed as a list
                     show_receipt(p_to_print.tolist()) 
         st.divider()
         search_query = st.text_input("🔍 Search History")
