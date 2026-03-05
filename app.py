@@ -53,7 +53,7 @@ if 'temp_tests' not in st.session_state: st.session_state.temp_tests = []
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
 if 'saved_mobile' not in st.session_state: st.session_state.saved_mobile = ""
-# Lab Info state mein save kar di taake har jagah use ho sake
+# Lab Info state
 if 'lab_name' not in st.session_state: st.session_state.lab_name = "MAJEED COLONY SEC 2, KARACHI"
 if 'lab_phone' not in st.session_state: st.session_state.lab_phone = "03XX-XXXXXXX"
 
@@ -91,15 +91,6 @@ else:
 
     with st.sidebar:
         st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
-        
-        # Sidebar Stats
-        if not df.empty and 'Date' in df.columns:
-            cash_df = df[df['Date'] == today]
-            total_cash = pd.to_numeric(cash_df['Paid_Amount'], errors='coerce').sum()
-            total_dues = pd.to_numeric(cash_df['Remaining'], errors='coerce').sum()
-        else: total_cash, total_dues = 0, 0
-        st.metric("Aaj Ka Cash", f"Rs. {total_cash}")
-        st.metric("Aaj Ke Dues", f"Rs. {total_dues}")
         st.divider()
         
         # Navigation
@@ -266,12 +257,26 @@ else:
             st.dataframe(filtered_df, use_container_width=True, hide_index=True)
         else: st.dataframe(df, use_container_width=True, hide_index=True)
 
-    # --- NAYA OPTION: LAB SETTINGS ---
+    # --- NAYA OPTION: LAB SETTINGS & CASH ---
     elif menu == "⚙️ Lab Settings":
-        st.header("⚙️ Lab System Settings")
-        st.subheader("Update Lab Information")
-        st.markdown("Yahan aap lab ka address aur mobile number change kar sakte hain.")
+        st.header("⚙️ Lab System Settings & Reports")
         
+        # Cash Counter Section (Ab yahan shift ho gaya hai)
+        st.subheader("💰 Aaj Ki Cash Report")
+        if not df.empty and 'Date' in df.columns:
+            cash_df = df[df['Date'] == today]
+            total_cash = pd.to_numeric(cash_df['Paid_Amount'], errors='coerce').sum()
+            total_dues = pd.to_numeric(cash_df['Remaining'], errors='coerce').sum()
+        else: total_cash, total_dues = 0, 0
+        
+        stat_c1, stat_c2 = st.columns(2)
+        stat_c1.metric("Aaj Ka Kul Cash", f"Rs. {total_cash}")
+        stat_c2.metric("Aaj Ke Kul Dues", f"Rs. {total_dues}")
+        
+        st.divider()
+        
+        # Lab Info Section
+        st.subheader("📍 Update Lab Information")
         c1, c2 = st.columns(2)
         new_lab_name = c1.text_input("Lab Address / Name", value=st.session_state.lab_name)
         new_lab_phone = c2.text_input("Lab Contact No.", value=st.session_state.lab_phone)
