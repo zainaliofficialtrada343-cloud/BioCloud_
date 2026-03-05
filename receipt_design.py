@@ -6,7 +6,7 @@ def show_receipt(v):
         # Tests aur unke rates ki setting
         tests_list = str(v[8]).split(", ")
         total_bill = float(v[9])
-        # Har test ka average rate nikalne ke liye
+        # Har test ka average rate (Amt fix)
         per_test_rate = total_bill / len(tests_list) if len(tests_list) > 0 else 0
         
         test_rows = ""
@@ -17,6 +17,7 @@ def show_receipt(v):
                 <td align="right" style="padding: 8px 0; font-size: 14px;">Rs. {per_test_rate:.0f}</td>
             </tr>"""
 
+        # HTML Slip Code
         receipt_html = f"""
         <html>
         <head>
@@ -25,19 +26,21 @@ def show_receipt(v):
                     @page {{ size: auto; margin: 0mm; }}
                     body {{ background: white; }}
                     .no-print {{ display: none !important; }}
-                    .receipt-container {{ border: none !important; box-shadow: none !important; }}
+                    .receipt-container {{ border: none !important; box-shadow: none !important; padding: 10px !important; }}
                 }}
                 body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }}
                 .receipt-container {{
-                    width: 400px;
+                    width: 420px;
                     margin: 0 auto;
                     padding: 20px;
                     background: white;
+                    border: 1px solid #eee; /* Screen par halka sa border, print mein nahi aayega */
                 }}
                 .header {{ text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px; }}
                 .btn-print {{ 
-                    background: #2e7d32; color: white; border: none; padding: 10px 20px; 
+                    background: #2e7d32; color: white; border: none; padding: 12px 20px; 
                     border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 20px;
+                    font-size: 16px;
                 }}
             </style>
         </head>
@@ -53,17 +56,26 @@ def show_receipt(v):
                     </div>
                 </div>
 
-                <table style="width: 100%; margin-top: 20px; font-size: 13px; line-height: 1.6;">
-                    <tr><td><b>Inv #:</b> {v[1]}</td><td align="right"><b>Date:</b> {v[2]}</td></tr>
-                    <tr><td><b>Name:</b> {v[3]}</td><td align="right"><b>Age/Sex:</b> {v[5]}/{v[6]}</td></tr>
-                    <tr><td colspan="2"><b>Mobile:</b> {v[4]}</td></tr>
+                <table style="width: 100%; margin-top: 20px; font-size: 13px; line-height: 1.8;">
+                    <tr>
+                        <td width="55%"><b>Inv #:</b> {v[1]}</td>
+                        <td align="right"><b>Date:</b> {v[2]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Name:</b> {v[3]}</td>
+                        <td align="right"><b>Age/Sex:</b> {v[5]}/{v[6]}</td>
+                    </tr>
+                    <tr>
+                        <td><b>Mobile:</b> {v[4]}</td>
+                        <td align="right"><b>Collected:</b> {v[7]}</td>
+                    </tr>
                 </table>
 
-                <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+                <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
                     <thead>
                         <tr style="border-bottom: 2px solid #000; border-top: 2px solid #000;">
-                            <th align="left" style="padding: 5px 0;">Test Description</th>
-                            <th align="right" style="padding: 5px 0;">Rate</th>
+                            <th align="left" style="padding: 8px 0;">Test Description</th>
+                            <th align="right" style="padding: 8px 0;">Rate</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,21 +88,21 @@ def show_receipt(v):
                         <tr><td>TOTAL BILL:</td><td align="right">Rs. {v[9]}</td></tr>
                         <tr style="color: #555;"><td>PAID AMOUNT:</td><td align="right">Rs. {v[10]}</td></tr>
                         <tr style="font-size: 18px; border-top: 1px dashed #000;">
-                            <td style="padding-top: 5px;">BALANCE:</td>
-                            <td align="right" style="padding-top: 5px;">Rs. {v[11]}</td>
+                            <td style="padding-top: 8px;">BALANCE:</td>
+                            <td align="right" style="padding-top: 8px;">Rs. {v[11]}</td>
                         </tr>
                     </table>
                 </div>
 
                 <div style="margin-top: 40px; text-align: center; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px;">
-                    <p>This is a computer generated report.</p>
-                    <p><b>Developed by Zain - 0370-2926075</b></p>
+                    <p style="margin: 2px 0;">This is a computer generated report.</p>
+                    <p style="margin: 2px 0;"><b>Developed by Zain - 0370-2926075</b></p>
                 </div>
             </div>
         </body>
         </html>
         """
-        components.html(receipt_html, height=700, scrolling=True)
+        components.html(receipt_html, height=750, scrolling=True)
 
     except Exception as e:
         st.error(f"Error: {e}")
