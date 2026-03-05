@@ -53,6 +53,9 @@ if 'temp_tests' not in st.session_state: st.session_state.temp_tests = []
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
 if 'saved_mobile' not in st.session_state: st.session_state.saved_mobile = ""
+# Lab Info state mein save kar di taake har jagah use ho sake
+if 'lab_name' not in st.session_state: st.session_state.lab_name = "MAJEED COLONY SEC 2, KARACHI"
+if 'lab_phone' not in st.session_state: st.session_state.lab_phone = "03XX-XXXXXXX"
 
 def check_login(u, p):
     if u == "admin" and p == "lab786":
@@ -89,12 +92,7 @@ else:
     with st.sidebar:
         st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
         
-        # Naya Box: Lab Mobile Number Add karne ke liye
-        st.markdown("### 📍 Lab Info")
-        st.info("MAJEED COLONY SEC 2, KARACHI")
-        lab_phone = st.text_input("Lab Contact No.", value="03XX-XXXXXXX")
-        
-        st.divider()
+        # Sidebar Stats
         if not df.empty and 'Date' in df.columns:
             cash_df = df[df['Date'] == today]
             total_cash = pd.to_numeric(cash_df['Paid_Amount'], errors='coerce').sum()
@@ -104,7 +102,8 @@ else:
         st.metric("Aaj Ke Dues", f"Rs. {total_dues}")
         st.divider()
         
-        menu = st.radio("Navigation", ["Registration", "Dues & Reports", "Expense Manager", "History Search", "Excel History"])
+        # Navigation
+        menu = st.radio("Navigation", ["Registration", "Dues & Reports", "Expense Manager", "History Search", "Excel History", "⚙️ Lab Settings"])
         
         st.divider()
         if st.checkbox("Enable Delete Option"):
@@ -247,38 +246,38 @@ else:
 
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
-        
-        # --- IMPROVED REPRINT SECTION ---
         with st.expander("🖨️ Reprint Old Slip (Smart Search)", expanded=True):
             if not df.empty:
                 search_term = st.text_input("Search by Name, Mobile or Invoice #")
                 if search_term:
-                    # Har field mein search karega (Smart Search)
-                    filtered_search = df[
-                        df['Name'].str.contains(search_term, case=False) | 
-                        df['Mobile'].astype(str).str.contains(search_term) | 
-                        df['Invoice'].str.contains(search_term, case=False)
-                    ]
-                    
+                    filtered_search = df[df['Name'].str.contains(search_term, case=False) | df['Mobile'].astype(str).str.contains(search_term) | df['Invoice'].str.contains(search_term, case=False)]
                     if not filtered_search.empty:
-                        # Display options with more detail
                         options = filtered_search.apply(lambda x: f"{x['Name']} | {x['Invoice']} | {x['Date']}", axis=1).tolist()
                         selected_option = st.selectbox("Select Patient to Print", ["-- Select --"] + options)
-                        
                         if selected_option != "-- Select --":
-                            # Get the original row based on selection
                             idx = options.index(selected_option)
                             p_to_print = filtered_search.iloc[idx]
                             show_receipt(p_to_print.tolist())
-                    else:
-                        st.warning("No matching patient found.")
-                else:
-                    st.info("Upar search box mein naam ya number likhein.")
-
+                    else: st.warning("No matching patient found.")
         st.divider()
         search_query = st.text_input("🔍 Search History Table")
         if search_query:
             filtered_df = df[df.astype(str).apply(lambda x: x.str.contains(search_query, case=False)).any(axis=1)]
             st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-        else:
-            st.dataframe(df, use_container_width=True, hide_index=True)
+        else: st.dataframe(df, use_container_width=True, hide_index=True)
+
+    # --- NAYA OPTION: LAB SETTINGS ---
+    elif menu == "⚙️ Lab Settings":
+        st.header("⚙️ Lab System Settings")
+        st.subheader("Update Lab Information")
+        st.markdown("Yahan aap lab ka address aur mobile number change kar sakte hain.")
+        
+        c1, c2 = st.columns(2)
+        new_lab_name = c1.text_input("Lab Address / Name", value=st.session_state.lab_name)
+        new_lab_phone = c2.text_input("Lab Contact No.", value=st.session_state.lab_phone)
+        
+        if st.button("Update Lab Settings"):
+            st.session_state.lab_name = new_lab_name
+            st.session_state.lab_phone = new_lab_phone
+            st.success("Lab details updated successfully!")
+            st.rerun()
