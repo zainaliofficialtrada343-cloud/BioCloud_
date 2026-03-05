@@ -132,7 +132,6 @@ else:
             p_name = r1c1.text_input("Patient Name")
             p_mobile = r1c2.text_input("Mobile No", value=st.session_state.saved_mobile)
             st.session_state.saved_mobile = p_mobile
-            # Auto Sequence Invoice
             inv_seq = f"INV-{len(df) + 101}"
             p_inv = r1c3.text_input("Invoice #", value=inv_seq)
             
@@ -224,9 +223,22 @@ else:
                 
                 total_ex = filtered_ex['Amount'].sum()
                 st.markdown(f"### Total Expense ({view_type}): **Rs. {total_ex}**")
-                st.dataframe(filtered_ex, use_container_width=True)
                 
-                # --- NEW PRINT/DOWNLOAD REPORT OPTION ---
+                # --- DELETE OPTION ADDED HERE ---
+                st.markdown("---")
+                st.write("#### Entries (Select to delete):")
+                for i, row in filtered_ex.iterrows():
+                    cols = st.columns([1, 2, 4, 2, 1])
+                    cols[0].write(f"{i+1}")
+                    cols[1].write(row['Category'])
+                    cols[2].write(row['Description'])
+                    cols[3].write(f"Rs. {row['Amount']}")
+                    if cols[4].button("🗑️", key=f"del_exp_{i}"):
+                        ex_df = ex_df.drop(i)
+                        ex_df.to_csv(EXPENSE_FILE, index=False)
+                        st.success("Expense Deleted!")
+                        st.rerun()
+                
                 st.divider()
                 exp_csv = filtered_ex.to_csv(index=False).encode('utf-8')
                 st.download_button(f"📥 Download {view_type} Expense Report (Excel)", data=exp_csv, file_name=f"Expense_Report_{view_type}_{today}.csv", mime='text/csv')
@@ -266,7 +278,6 @@ else:
 
     elif menu == "⚙️ Lab Settings":
         st.header("⚙️ Lab System Settings & Reports")
-        
         st.subheader("💰 Aaj Ki Cash & Profit Report")
         ex_df = get_expense_data()
         today_ex = ex_df[ex_df['Date'] == today_dt]['Amount'].sum() if not ex_df.empty else 0
