@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from datetime import datetime
 from login_ui import show_login_page, local_css
+from receipt_design import show_receipt  # <--- Nayi file se slip uthayi hai
 
 # --- 1. CSV DATABASE CONFIG ---
 PATIENT_FILE = "data_db.csv"
@@ -35,90 +36,10 @@ def save_test_local(new_test_df):
     updated_tests = pd.concat([existing_tests, new_test_df], ignore_index=True)
     updated_tests.to_csv(TESTS_FILE, index=False)
 
-# --- 2. CLEAN RECEIPT FUNCTION (FIXED) ---
-def show_receipt(val):
-    v = val.tolist() if hasattr(val, 'tolist') else val
-    try:
-        receipt_html = f"""
-        <style>
-            @media print {{
-                @page {{ size: auto; margin: 0mm; }}
-                body {{ background: white !important; margin: 0 !important; padding: 0 !important; }}
-                header, footer, .sidebar, [data-testid="stSidebar"], [data-testid="stHeader"], .stButton {{ 
-                    display: none !important; 
-                }}
-                .receipt-container {{
-                    width: 350px !important;
-                    border: none !important;
-                    margin: 0 !important;
-                    padding: 10px !important;
-                    visibility: visible !important;
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                }}
-                body * {{ visibility: hidden; }}
-                .receipt-container, .receipt-container * {{ visibility: visible !important; }}
-            }}
-            .receipt-container {{
-                width: 350px;
-                border: 2px solid #000;
-                padding: 15px;
-                font-family: 'Courier New', Courier, monospace;
-                margin: 20px auto;
-                background: white;
-                color: black;
-            }}
-            .header-title {{ text-align: center; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; }}
-            .header-sub {{ text-align: center; font-size: 12px; font-weight: bold; margin: 2px 0; }}
-            .amt-center {{ text-align: center; }}
-        </style>
-
-        <div class="receipt-container">
-            <h2 class="header-title">( THE LIFE CARE )</h2>
-            <p class="header-sub">MAJEED COLONY SEC 2, KARACHI</p>
-            <p class="header-sub">0370-2906075</p>
-            <hr style="border: 1px solid #000;">
-            
-            <table style="width: 100%; font-size: 12px;">
-                <tr><td><b>Patient:</b> {v[3]}</td><td align="right"><b>Inv:</b> {v[1]}</td></tr>
-                <tr><td><b>Age/Gen:</b> {v[5]} / {v[6]}</td><td align="right"><b>Date:</b> {v[2]}</td></tr>
-                <tr><td><b>Mobile:</b> {v[4]}</td><td align="right"><b>Ref:</b> SELF</td></tr>
-            </table>
-
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
-                <tr style="border-bottom: 2px solid #000; border-top: 2px solid #000;">
-                    <th align="left">Description</th>
-                    <th class="amt-center">Qty</th>
-                    <th align="right">Amt</th>
-                </tr>
-        """
-        tests_list = str(v[8]).split(", ")
-        for t in tests_list:
-            receipt_html += f"<tr><td>{t}</td><td class='amt-center'>1</td><td align='right'>-</td></tr>"
-
-        receipt_html += f"""
-            </table>
-
-            <div style="margin-top: 15px; border-top: 2px solid #000; padding-top: 5px; font-weight: bold;">
-                <div style="display: flex; justify-content: space-between;"><span>Total:</span> <span>Rs. {v[9]}</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>Paid:</span> <span>Rs. {v[10]}</span></div>
-                <div style="display: flex; justify-content: space-between; font-size: 15px; background: #eee; padding: 2px;">
-                    <span>Balance:</span> <span>Rs. {v[11]}</span>
-                </div>
-            </div>
-            <p style="text-align: center; font-size: 9px; margin-top: 20px;">Developed by Zain - 03702906075</p>
-        </div>
-        """
-        st.markdown(receipt_html, unsafe_allow_html=True)
-        st.button("Print Slip (Ctrl+P)")
-            
-    except Exception as e:
-        st.error(f"Error: {e}")
-
-# --- REST OF THE CODE REMAINS SAME ---
+# --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
 
+# --- 4. SESSION STATE & LOGIN ---
 if 'temp_tests' not in st.session_state: st.session_state.temp_tests = [] 
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
@@ -130,6 +51,7 @@ def check_login(u, p):
         st.rerun()
     else: st.error("Invalid Username or Password")
 
+# --- 5. MAIN APP LOGIC ---
 if not st.session_state['auth']:
     show_login_page(check_login)
 else:
@@ -166,6 +88,7 @@ else:
         st.header("New Patient Registration")
         if st.session_state.show_slip:
             st.success("✅ Record Saved!")
+            # Receipt helper function call
             show_receipt(st.session_state.show_slip)
             if st.button("Register Another Patient"):
                 st.session_state.show_slip = None
@@ -224,9 +147,10 @@ else:
                     all_tests_str = ", ".join([t['Test'] for t in st.session_state.temp_tests])
                     rem = total_bill - paid_amt
                     new_id = len(df) + 1
-                    new_row = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, all_tests_str, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
-                    save_record_local(pd.DataFrame([new_row], columns=required_cols))
-                    st.session_state.show_slip = new_row 
+                    # Data list for the record
+                    data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, all_tests_str, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
+                    save_record_local(pd.DataFrame([data_list], columns=required_cols))
+                    st.session_state.show_slip = data_list 
                     st.session_state.temp_tests = [] 
                     st.rerun()
 
@@ -259,7 +183,7 @@ else:
                 selected_p = st.selectbox("Select Patient to Print", ["-- Select --"] + patient_names)
                 if selected_p != "-- Select --":
                     p_to_print = df[df["Name"] == selected_p].iloc[-1]
-                    show_receipt(p_to_print) 
+                    show_receipt(p_to_print.tolist()) 
         st.divider()
         search_query = st.text_input("🔍 Search History")
         if search_query:
