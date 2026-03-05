@@ -1,22 +1,44 @@
-<div style="width: 350px; border: 2px solid #000; padding: 15px; font-family: sans-serif; margin: auto; background: white; color: black;">
-    <h2 style="text-align: center; margin: 0;">THE LIFE CARE</h2>
+<style>
+    .receipt-box {
+        width: 350px; border: 2px solid #000; padding: 15px; 
+        font-family: sans-serif; margin: auto; background: white; color: black;
+    }
+    .header-title {
+        text-align: center; margin: 0; font-weight: 900; font-size: 18px;
+    }
+    .amt-center { text-align: center; }
+    
+    @media print {
+        body * { visibility: hidden; }
+        .receipt-box, .receipt-box * { visibility: visible; }
+        .receipt-box { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+        .no-print { display: none !important; }
+    }
+</style>
+
+<div class="receipt-box">
+    <h2 class="header-title">THE LIFE CARE</h2>
     <p style="text-align: center; font-size: 10px; margin: 5px 0;">MAJEED COLONY SEC 2, KARACHI</p>
-    <hr>
+    <hr style="border: 1px solid #000;">
     <table style="width: 100%; font-size: 12px;">
         <tr><td><b>Patient:</b> {{name}}</td><td align="right"><b>Inv:</b> {{invoice}}</td></tr>
         <tr><td><b>Age/Gen:</b> {{age}} / {{gender}}</td><td align="right"><b>Date:</b> {{date}}</td></tr>
         <tr><td><b>Mobile:</b> {{mobile}}</td><td align="right"><b>Ref:</b> SELF</td></tr>
     </table>
     <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
-        <tr style="border-bottom: 1px solid #000; border-top: 1px solid #000;">
-            <th align="left">Description</th><th align="right">Amt</th>
+        <tr style="border-bottom: 2px solid #000; border-top: 2px solid #000;">
+            <th align="left">Description</th>
+            <th class="amt-center">Qty</th>
+            <th align="right">Amt</th>
         </tr>
         {{test_rows}}
     </table>
     <div style="margin-top: 15px; border-top: 2px solid #000; padding-top: 5px;">
         <div style="display: flex; justify-content: space-between;"><b>Total:</b> <span>Rs. {{total}}</span></div>
         <div style="display: flex; justify-content: space-between;"><b>Paid:</b> <span>Rs. {{paid}}</span></div>
-        <div style="display: flex; justify-content: space-between; font-size: 16px; background: #eee;"><b>Balance:</b> <span>Rs. {{balance}}</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 16px; background: #eee; padding: 2px;">
+            <b>Balance:</b> <span>Rs. {{balance}}</span>
+        </div>
     </div>
     <p style="text-align: center; font-size: 9px; margin-top: 20px;">Developed by Zain - 03702906075</p>
 </div>
