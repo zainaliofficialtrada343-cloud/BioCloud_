@@ -235,41 +235,40 @@ else:
 
     elif menu == "History Search":
         st.header("🔍 Advanced Patient Search")
-        # --- FIXED: Multipurpose Search ---
-        search_term = st.text_input("Search by Name, Mobile, Invoice or ID")
-        if search_term:
-            # Sab columns mein check karega
+        # --- GLOBAL SEARCH SYSTEM ---
+        search_query = st.text_input("Enter Name, Mobile, ID or Invoice #")
+        if search_query:
+            # Multi-column search logic
             hist = df[
-                df['Name'].str.contains(search_term, case=False, na=False) | 
-                df['Mobile'].astype(str).str.contains(search_term, na=False) | 
-                df['Invoice'].str.contains(search_term, case=False, na=False) |
-                df['ID'].astype(str) == search_term
+                df['Name'].str.contains(search_query, case=False, na=False) | 
+                df['Mobile'].astype(str).str.contains(search_query, na=False) | 
+                df['Invoice'].str.contains(search_query, case=False, na=False) |
+                df['ID'].astype(str).str.contains(search_query, na=False)
             ]
             if not hist.empty:
-                st.write(f"Found {len(hist)} records:")
+                st.success(f"Found {len(hist)} records for '{search_query}'")
                 st.dataframe(hist, use_container_width=True)
-            else: st.warning("No record found.")
+            else:
+                st.warning("No matching record found. Please check your spelling.")
 
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
         
-        # --- FIXED: Search back in Excel History ---
+        # --- EXCEL STYLE SEARCH ADDED BACK ---
         if not df.empty:
-            st.subheader("Filter Data")
-            ex_search = st.text_input("Search anything in table...", key="ex_search")
+            st.subheader("Filter Full Records")
+            excel_search = st.text_input("Search Anything in Table...", key="excel_filter")
             
-            display_df = df
-            if ex_search:
-                display_df = df[
-                    df['Name'].str.contains(ex_search, case=False, na=False) | 
-                    df['Mobile'].astype(str).str.contains(ex_search, na=False) | 
-                    df['Invoice'].str.contains(ex_search, case=False, na=False)
-                ]
+            # Filter the dataframe based on search
+            if excel_search:
+                filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(excel_search, case=False).any(), axis=1)]
+            else:
+                filtered_df = df
+
+            st.dataframe(filtered_df, use_container_width=True)
             
-            st.dataframe(display_df, use_container_width=True)
-            
-            # Download CSV button (filtered data)
-            csv = display_df.to_csv(index=False).encode('utf-8')
+            # Download CSV
+            csv = filtered_df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download Filtered History", data=csv, file_name="BioCloud_History.csv", mime="text/csv")
         else:
             st.info("No data found in database.")
@@ -277,9 +276,13 @@ else:
         st.divider()
         with st.expander("🖨️ Reprint Old Slip", expanded=True):
             if not df.empty:
-                reprint_term = st.text_input("Reprint Search (Name/Mobile/Inv)")
+                reprint_term = st.text_input("Search for Slip (Name/Mobile/Inv)")
                 if reprint_term:
-                    filtered_search = df[df['Name'].str.contains(reprint_term, case=False, na=False) | df['Mobile'].astype(str).str.contains(reprint_term, na=False) | df['Invoice'].str.contains(reprint_term, case=False, na=False)]
+                    filtered_search = df[
+                        df['Name'].str.contains(reprint_term, case=False, na=False) | 
+                        df['Mobile'].astype(str).str.contains(reprint_term) | 
+                        df['Invoice'].str.contains(reprint_term, case=False)
+                    ]
                     if not filtered_search.empty:
                         options = filtered_search.apply(lambda x: f"{x['Name']} | {x['Invoice']} | {x['Date']}", axis=1).tolist()
                         selected_option = st.selectbox("Select Patient to Print", ["-- Select --"] + options)
