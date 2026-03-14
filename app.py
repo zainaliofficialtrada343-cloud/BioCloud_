@@ -52,7 +52,6 @@ def save_expense_gsheet(new_ex_df):
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
 
 # --- 4. PRINT QUALITY FIX (CSS) ---
-# Is se print karte waqt pixels nahi phatenge aur font saaf aayega
 st.markdown("""
     <style>
     @media print {
@@ -236,9 +235,16 @@ else:
 
     elif menu == "History Search":
         st.header("🔍 Advanced Patient Search")
-        search_mobile = st.text_input("Enter Patient Mobile Number to see History")
-        if search_mobile:
-            hist = df[df['Mobile'].astype(str).str.contains(search_mobile)]
+        # --- FIXED: Multipurpose Search ---
+        search_term = st.text_input("Search by Name, Mobile, Invoice or ID")
+        if search_term:
+            # Sab columns mein check karega
+            hist = df[
+                df['Name'].str.contains(search_term, case=False, na=False) | 
+                df['Mobile'].astype(str).str.contains(search_term, na=False) | 
+                df['Invoice'].str.contains(search_term, case=False, na=False) |
+                df['ID'].astype(str) == search_term
+            ]
             if not hist.empty:
                 st.write(f"Found {len(hist)} records:")
                 st.dataframe(hist, use_container_width=True)
@@ -247,23 +253,33 @@ else:
     elif menu == "Excel History":
         st.header("📊 Lab Database History")
         
-        # --- FIXED: Show Table like Excel ---
-        st.subheader("Full Records View")
+        # --- FIXED: Search back in Excel History ---
         if not df.empty:
-            st.dataframe(df, use_container_width=True)
+            st.subheader("Filter Data")
+            ex_search = st.text_input("Search anything in table...", key="ex_search")
             
-            # Download CSV button
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Download Database as Excel/CSV", data=csv, file_name="BioCloud_History.csv", mime="text/csv")
+            display_df = df
+            if ex_search:
+                display_df = df[
+                    df['Name'].str.contains(ex_search, case=False, na=False) | 
+                    df['Mobile'].astype(str).str.contains(ex_search, na=False) | 
+                    df['Invoice'].str.contains(ex_search, case=False, na=False)
+                ]
+            
+            st.dataframe(display_df, use_container_width=True)
+            
+            # Download CSV button (filtered data)
+            csv = display_df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download Filtered History", data=csv, file_name="BioCloud_History.csv", mime="text/csv")
         else:
             st.info("No data found in database.")
 
         st.divider()
         with st.expander("🖨️ Reprint Old Slip", expanded=True):
             if not df.empty:
-                search_term = st.text_input("Search by Name, Mobile or Invoice #")
-                if search_term:
-                    filtered_search = df[df['Name'].str.contains(search_term, case=False) | df['Mobile'].astype(str).str.contains(search_term) | df['Invoice'].str.contains(search_term, case=False)]
+                reprint_term = st.text_input("Reprint Search (Name/Mobile/Inv)")
+                if reprint_term:
+                    filtered_search = df[df['Name'].str.contains(reprint_term, case=False, na=False) | df['Mobile'].astype(str).str.contains(reprint_term, na=False) | df['Invoice'].str.contains(reprint_term, case=False, na=False)]
                     if not filtered_search.empty:
                         options = filtered_search.apply(lambda x: f"{x['Name']} | {x['Invoice']} | {x['Date']}", axis=1).tolist()
                         selected_option = st.selectbox("Select Patient to Print", ["-- Select --"] + options)
