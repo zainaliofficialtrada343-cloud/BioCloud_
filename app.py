@@ -125,37 +125,21 @@ else:
             st.session_state['auth'] = False
             st.rerun()
 
-    # --- LANDING PAGE (HOME) ---
+    # --- RESTORED SIMPLE HOME PAGE ---
     if menu == "🏠 Home":
-        st.markdown(f"""
-        <div class="main-header">
-            <h1 style='margin:0; color: #1E3A8A;'>Welcome to {st.session_state.lab_name}</h1>
-            <p style='color: #4B5563;'>Smart Laboratory Management System | Today is {today_dt.strftime('%d %B, %Y')}</p>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown(f"## Welcome to {st.session_state.lab_name}")
+        st.write(f"Today's Date: {today_dt.strftime('%d %B, %Y')}")
+        
         # Dashboard Metrics
         c1, c2, c3, c4 = st.columns(4)
         total_p = len(df[df['Date'] == today]) if not df.empty else 0
         total_cash = pd.to_numeric(df[df['Date'] == today]['Paid_Amount'], errors='coerce').sum() if not df.empty else 0
         pending_p = len(df[df['Status'] == 'Pending']) if not df.empty else 0
         
-        with c1: st.markdown(f'<div class="stat-card"><div class="stat-label">Today\'s Patients</div><div class="stat-val">{total_p}</div></div>', unsafe_allow_html=True)
-        with c2: st.markdown(f'<div class="stat-card"><div class="stat-label">Today\'s Cash</div><div class="stat-val">Rs. {total_cash}</div></div>', unsafe_allow_html=True)
-        with c3: st.markdown(f'<div class="stat-card" style="border-bottom-color: #EF4444;"><div class="stat-label">Total Pending</div><div class="stat-val">{pending_p}</div></div>', unsafe_allow_html=True)
-        with c4: st.markdown(f'<div class="stat-card" style="border-bottom-color: #3B82F6;"><div class="stat-label">Lab Status</div><div class="stat-val">Online ✅</div></div>', unsafe_allow_html=True)
-
-        st.divider()
-        
-        # Quick Navigation
-        st.subheader("🚀 Quick Actions")
-        qa1, qa2, qa3 = st.columns(3)
-        if qa1.button("➕ New Registration", use_container_width=True): 
-            st.info("Side menu se 'Registration' select karein")
-        if qa2.button("🔍 Search Patient", use_container_width=True):
-            st.info("Side menu se 'History Search' select karein")
-        if qa3.button("💵 Clear Dues", use_container_width=True):
-            st.info("Side menu se 'Dues & Reports' select karein")
+        with c1: st.metric("Today's Patients", total_p)
+        with c2: st.metric("Today's Cash", f"Rs. {total_cash}")
+        with c3: st.metric("Total Pending", pending_p)
+        with c4: st.metric("Lab Status", "Online ✅")
 
     elif menu == "📝 Registration":
         st.header("New Patient Registration")
