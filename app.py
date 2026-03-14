@@ -51,25 +51,40 @@ def save_expense_gsheet(new_ex_df):
 # --- 3. PAGE CONFIG ---
 st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
 
-# --- 4. PRINT QUALITY FIX (CSS) ---
+# --- 4. STYLE & DESIGN (CSS) ---
 st.markdown("""
     <style>
+    /* Global Styles */
+    .main-header {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 25px;
+    }
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-align: center;
+        border-bottom: 4px solid #4CAF50;
+    }
+    .stat-val { font-size: 24px; font-weight: bold; color: #2E7D32; }
+    .stat-label { font-size: 14px; color: #666; }
+    
     @media print {
         .stApp { background: white !important; }
         .no-print { display: none !important; }
-        #receipt-container { 
-            width: 100% !important; 
-            box-shadow: none !important; 
-            margin: 0 !important;
-            padding: 0 !important;
-            image-rendering: -webkit-optimize-contrast !important;
-        }
+        #receipt-container { width: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; image-rendering: -webkit-optimize-contrast !important; }
         h1, h2, h3, p, td { color: black !important; font-family: 'Arial', sans-serif !important; }
     }
     </style>
 """, unsafe_allow_html=True)
 
 # --- 5. SESSION STATE & LOGIN ---
+if 'menu_choice' not in st.session_state: st.session_state.menu_choice = "Home"
 if 'temp_tests' not in st.session_state: st.session_state.temp_tests = [] 
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
@@ -88,7 +103,7 @@ if not st.session_state['auth']:
     show_login_page(check_login)
 else:
     local_css("style.css")
-    st.markdown("""<style>.stApp { background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("https://raw.githubusercontent.com/zainaliofficialtrada343-cloud/BioCloud_/main/lab_girl.jpg"); background-size: cover; background-position: center; background-attachment: fixed; }</style>""", unsafe_allow_html=True)
+    st.markdown("""<style>.stApp { background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), url("https://raw.githubusercontent.com/zainaliofficialtrada343-cloud/BioCloud_/main/lab_girl.jpg"); background-size: cover; background-position: center; background-attachment: fixed; }</style>""", unsafe_allow_html=True)
 
     df = get_full_data()
     today_dt = datetime.now().date()
@@ -98,7 +113,7 @@ else:
     with st.sidebar:
         st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
         st.divider()
-        menu = st.radio("Navigation", ["Registration", "Dues & Reports", "Expense Manager", "History Search", "Excel History", "⚙️ Lab Settings"])
+        menu = st.radio("Navigation", ["🏠 Home", "📝 Registration", "💰 Dues & Reports", "💸 Expense Manager", "🔍 History Search", "📊 Excel History", "⚙️ Lab Settings"])
         st.divider()
         if st.checkbox("Enable Delete Option"):
             if st.button("⚠️ Delete All Patient Data", type="primary"):
@@ -110,7 +125,39 @@ else:
             st.session_state['auth'] = False
             st.rerun()
 
-    if menu == "Registration":
+    # --- LANDING PAGE (HOME) ---
+    if menu == "🏠 Home":
+        st.markdown(f"""
+        <div class="main-header">
+            <h1 style='margin:0; color: #1E3A8A;'>Welcome to {st.session_state.lab_name}</h1>
+            <p style='color: #4B5563;'>Smart Laboratory Management System | Today is {today_dt.strftime('%d %B, %Y')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Dashboard Metrics
+        c1, c2, c3, c4 = st.columns(4)
+        total_p = len(df[df['Date'] == today]) if not df.empty else 0
+        total_cash = pd.to_numeric(df[df['Date'] == today]['Paid_Amount'], errors='coerce').sum() if not df.empty else 0
+        pending_p = len(df[df['Status'] == 'Pending']) if not df.empty else 0
+        
+        with c1: st.markdown(f'<div class="stat-card"><div class="stat-label">Today\'s Patients</div><div class="stat-val">{total_p}</div></div>', unsafe_allow_html=True)
+        with c2: st.markdown(f'<div class="stat-card"><div class="stat-label">Today\'s Cash</div><div class="stat-val">Rs. {total_cash}</div></div>', unsafe_allow_html=True)
+        with c3: st.markdown(f'<div class="stat-card" style="border-bottom-color: #EF4444;"><div class="stat-label">Total Pending</div><div class="stat-val">{pending_p}</div></div>', unsafe_allow_html=True)
+        with c4: st.markdown(f'<div class="stat-card" style="border-bottom-color: #3B82F6;"><div class="stat-label">Lab Status</div><div class="stat-val">Online ✅</div></div>', unsafe_allow_html=True)
+
+        st.divider()
+        
+        # Quick Navigation
+        st.subheader("🚀 Quick Actions")
+        qa1, qa2, qa3 = st.columns(3)
+        if qa1.button("➕ New Registration", use_container_width=True): 
+            st.info("Side menu se 'Registration' select karein")
+        if qa2.button("🔍 Search Patient", use_container_width=True):
+            st.info("Side menu se 'History Search' select karein")
+        if qa3.button("💵 Clear Dues", use_container_width=True):
+            st.info("Side menu se 'Dues & Reports' select karein")
+
+    elif menu == "📝 Registration":
         st.header("New Patient Registration")
         if st.session_state.show_slip:
             st.success("✅ Record Saved to Cloud!")
@@ -181,7 +228,7 @@ else:
                     st.session_state.temp_tests = [] 
                     st.rerun()
 
-    elif menu == "Dues & Reports":
+    elif menu == "💰 Dues & Reports":
         st.header("Update Records & Results")
         if not df.empty:
             pending_df = df[df["Status"] == "Pending"]
@@ -201,7 +248,7 @@ else:
                     st.rerun()
             else: st.info("Koi Pending record nahi hai.")
 
-    elif menu == "Expense Manager":
+    elif menu == "💸 Expense Manager":
         st.header("💸 Kharcha Pani (Cloud Backup)")
         ex_df = get_expense_data()
         tab1, tab2 = st.tabs(["➕ Add Expense", "📊 Expense Reports"])
@@ -233,56 +280,33 @@ else:
                     conn.update(worksheet="expenses_db", data=empty_ex)
                     st.rerun()
 
-    elif menu == "History Search":
+    elif menu == "🔍 History Search":
         st.header("🔍 Advanced Patient Search")
-        # --- GLOBAL SEARCH SYSTEM ---
-        search_query = st.text_input("Enter Name, Mobile, ID or Invoice #")
+        search_query = st.text_input("Search by Name, Mobile, ID or Invoice #")
         if search_query:
-            # Multi-column search logic
-            hist = df[
-                df['Name'].str.contains(search_query, case=False, na=False) | 
-                df['Mobile'].astype(str).str.contains(search_query, na=False) | 
-                df['Invoice'].str.contains(search_query, case=False, na=False) |
-                df['ID'].astype(str).str.contains(search_query, na=False)
-            ]
+            hist = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
             if not hist.empty:
-                st.success(f"Found {len(hist)} records for '{search_query}'")
+                st.write(f"Found {len(hist)} records:")
                 st.dataframe(hist, use_container_width=True)
-            else:
-                st.warning("No matching record found. Please check your spelling.")
+            else: st.warning("No record found.")
 
-    elif menu == "Excel History":
+    elif menu == "📊 Excel History":
         st.header("📊 Lab Database History")
-        
-        # --- EXCEL STYLE SEARCH ADDED BACK ---
         if not df.empty:
-            st.subheader("Filter Full Records")
-            excel_search = st.text_input("Search Anything in Table...", key="excel_filter")
-            
-            # Filter the dataframe based on search
-            if excel_search:
-                filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(excel_search, case=False).any(), axis=1)]
-            else:
-                filtered_df = df
-
-            st.dataframe(filtered_df, use_container_width=True)
-            
-            # Download CSV
-            csv = filtered_df.to_csv(index=False).encode('utf-8')
+            st.subheader("Filter Data")
+            ex_search = st.text_input("Search anything in table...", key="ex_search")
+            display_df = df[df.apply(lambda row: row.astype(str).str.contains(ex_search, case=False).any(), axis=1)] if ex_search else df
+            st.dataframe(display_df, use_container_width=True)
+            csv = display_df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download Filtered History", data=csv, file_name="BioCloud_History.csv", mime="text/csv")
-        else:
-            st.info("No data found in database.")
+        else: st.info("No data found in database.")
 
         st.divider()
         with st.expander("🖨️ Reprint Old Slip", expanded=True):
             if not df.empty:
-                reprint_term = st.text_input("Search for Slip (Name/Mobile/Inv)")
+                reprint_term = st.text_input("Reprint Search (Name/Mobile/Inv)")
                 if reprint_term:
-                    filtered_search = df[
-                        df['Name'].str.contains(reprint_term, case=False, na=False) | 
-                        df['Mobile'].astype(str).str.contains(reprint_term) | 
-                        df['Invoice'].str.contains(reprint_term, case=False)
-                    ]
+                    filtered_search = df[df.apply(lambda row: row.astype(str).str.contains(reprint_term, case=False).any(), axis=1)]
                     if not filtered_search.empty:
                         options = filtered_search.apply(lambda x: f"{x['Name']} | {x['Invoice']} | {x['Date']}", axis=1).tolist()
                         selected_option = st.selectbox("Select Patient to Print", ["-- Select --"] + options)
