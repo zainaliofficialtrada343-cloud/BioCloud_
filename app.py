@@ -79,19 +79,33 @@ st.markdown("""
     .stat-label { font-size: 14px; color: #666; }
     
     @media print {
+        @page { size: auto; margin: 5mm; }
         .stApp { background: white !important; }
         .no-print { display: none !important; }
-        /* High Pixel Quality Print Settings */
+        
+        /* High Pixel Quality & Sharp Text Settings */
         #receipt-container { 
             width: 100% !important; 
             box-shadow: none !important; 
             margin: 0 !important; 
-            padding: 10px !important; 
+            padding: 0 !important; 
+            background-color: white !important;
+            /* Inset text rendering for maximum sharpness */
+            text-rendering: optimizeLegibility !important;
+            -webkit-font-smoothing: antialiased !important;
             image-rendering: -webkit-optimize-contrast !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
         }
-        h1, h2, h3, p, td { color: black !important; font-family: 'Arial', sans-serif !important; }
+        
+        /* Making sure every letter is solid black and crisp */
+        h1, h2, h3, p, td, span, b, div { 
+            color: #000000 !important; 
+            font-family: 'Helvetica', 'Arial', sans-serif !important;
+            letter-spacing: 0.2px !important;
+            font-weight: 500 !important;
+        }
+
+        /* Removing Streamlit UI elements from print */
+        header, footer, .stSidebar, .stActionButton { display: none !important; }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -318,7 +332,7 @@ else:
         st.header("⚙️ Lab System Settings")
         st.subheader("💰 Cash & Profit")
         ex_df = get_expense_data()
-        today_ex = ex_df[ex_df['Date'] == today_dt]['Amount'].sum() if not ex_df.empty else 0
+        today_ex = find_today_ex = ex_df[ex_df['Date'] == today_dt]['Amount'].sum() if not ex_df.empty else 0
         if not df.empty:
             cash_df = df[df['Date'] == today]
             total_cash = pd.to_numeric(cash_df['Paid_Amount'], errors='coerce').sum()
