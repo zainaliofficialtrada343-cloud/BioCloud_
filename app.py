@@ -6,9 +6,58 @@ from login_ui import show_login_page, local_css
 from receipt_design import show_receipt
 # --- NEW GOOGLE SHEETS IMPORT ---
 from streamlit_gsheets import GSheetsConnection
+# --- ADDED FOR PDF ---
+from fpdf import FPDF
+import base64
 
 # --- 1. GOOGLE SHEETS CONNECTION CONFIG ---
 conn = st.connection("gsheets", type=GSheetsConnection)
+
+# --- NEW: PDF GENERATION FUNCTION (DOES NOT CHANGE DESIGN) ---
+def download_pdf_receipt(v, lab_phone):
+    pdf = FPDF(format=(80, 150))
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 8, "THE LIFE CARE", ln=True, align='C')
+    pdf.set_font("Arial", '', 8)
+    pdf.cell(0, 4, "MAJEED COLONY SEC 2, KARACHI", ln=True, align='C')
+    pdf.cell(0, 4, f"Contact: {lab_phone}", ln=True, align='C')
+    pdf.ln(2)
+    pdf.set_font("Arial", 'B', 9)
+    pdf.cell(0, 6, "PATIENT RECEIPT", border=1, ln=True, align='C')
+    pdf.ln(4)
+    pdf.set_font("Arial", '', 8)
+    pdf.cell(30, 5, f"Inv #: {v[1]}")
+    pdf.cell(0, 5, f"Date: {v[2]}", align='R', ln=True)
+    pdf.cell(30, 5, f"Name: {v[3]}")
+    pdf.cell(0, 5, f"Age/Sex: {v[5]}/{v[6]}", align='R', ln=True)
+    pdf.ln(2)
+    pdf.cell(0, 5, f"Ref By: {v[7]}", ln=True)
+    pdf.ln(2)
+    pdf.line(10, pdf.get_y(), 70, pdf.get_y())
+    pdf.set_font("Arial", 'B', 8)
+    pdf.cell(40, 6, "Test Description")
+    pdf.cell(20, 6, "Rate", align='R', ln=True)
+    pdf.line(10, pdf.get_y(), 70, pdf.get_y())
+    tests_list = str(v[8]).split(", ")
+    total_bill = float(v[9])
+    per_test_rate = total_bill / len(tests_list) if len(tests_list) > 0 else 0
+    pdf.set_font("Arial", '', 8)
+    for t in tests_list:
+        pdf.cell(40, 6, t)
+        pdf.cell(20, 6, f"{per_test_rate:.0f}", align='R', ln=True)
+    pdf.ln(2)
+    pdf.line(10, pdf.get_y(), 70, pdf.get_y())
+    pdf.set_font("Arial", 'B', 9)
+    pdf.cell(40, 7, "TOTAL BILL:")
+    pdf.cell(20, 7, f"Rs. {v[9]}", align='R', ln=True)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(40, 7, "BALANCE:")
+    pdf.cell(20, 7, f"Rs. {v[11]}", align='R', ln=True)
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 7)
+    pdf.cell(0, 4, "Developed by Zain - 0370-2926075", ln=True, align='C')
+    return pdf.output(dest='S').encode('latin-1')
 
 def get_full_data():
     try:
@@ -21,7 +70,6 @@ def get_full_data():
 def get_tests_list():
     try:
         df = conn.read(worksheet="tests_db", ttl="0")
-        # Fix: Converting Rate to numeric safely for large datasets
         if not df.empty:
             df['Rate'] = pd.to_numeric(df['Rate'], errors='coerce').fillna(0)
         return df
@@ -82,29 +130,22 @@ st.markdown("""
         @page { size: auto; margin: 5mm; }
         .stApp { background: white !important; }
         .no-print { display: none !important; }
-        
-        /* High Pixel Quality & Sharp Text Settings */
         #receipt-container { 
             width: 100% !important; 
             box-shadow: none !important; 
             margin: 0 !important; 
             padding: 0 !important; 
             background-color: white !important;
-            /* Inset text rendering for maximum sharpness */
             text-rendering: optimizeLegibility !important;
             -webkit-font-smoothing: antialiased !important;
             image-rendering: -webkit-optimize-contrast !important;
         }
-        
-        /* Making sure every letter is solid black and crisp */
         h1, h2, h3, p, td, span, b, div { 
             color: #000000 !important; 
             font-family: 'Helvetica', 'Arial', sans-serif !important;
             letter-spacing: 0.2px !important;
             font-weight: 500 !important;
         }
-
-        /* Removing Streamlit UI elements from print */
         header, footer, .stSidebar, .stActionButton { display: none !important; }
     }
     </style>
@@ -152,17 +193,13 @@ else:
             st.session_state['auth'] = False
             st.rerun()
 
-    # --- RESTORED SIMPLE HOME PAGE ---
     if menu == "🏠 Home":
         st.markdown(f"## Welcome to {st.session_state.lab_name}")
         st.write(f"Today's Date: {today_dt.strftime('%d %B, %Y')}")
-        
-        # Dashboard Metrics
         c1, c2, c3, c4 = st.columns(4)
         total_p = len(df[df['Date'] == today]) if not df.empty else 0
         total_cash = pd.to_numeric(df[df['Date'] == today]['Paid_Amount'], errors='coerce').sum() if not df.empty else 0
         pending_p = len(df[df['Status'] == 'Pending']) if not df.empty else 0
-        
         with c1: st.metric("Today's Patients", total_p)
         with c2: st.metric("Today's Cash", f"Rs. {total_cash}")
         with c3: st.metric("Total Pending", pending_p)
@@ -172,6 +209,9 @@ else:
         st.header("New Patient Registration")
         if st.session_state.show_slip:
             st.success("✅ Record Saved to Cloud!")
+            # --- ADDED PDF DOWNLOAD OPTION ---
+            pdf_bytes = download_pdf_receipt(st.session_state.show_slip, st.session_state.lab_phone)
+            st.download_button(label="📥 Download HD PDF Receipt", data=pdf_bytes, file_name=f"Receipt_{st.session_state.show_slip[1]}.pdf", mime="application/pdf")
             show_receipt(st.session_state.show_slip)
             if st.button("Register Another Patient"):
                 st.session_state.show_slip = None
@@ -208,8 +248,6 @@ else:
         st.subheader("Add Tests to Bill")
         col_t1, col_t2, col_t3 = st.columns([2, 1, 1])
         selected_t = col_t1.selectbox("Select Test", ["--- Select ---"] + test_options)
-        
-        # --- FIXED: SAFE DATA FETCHING FOR LARGE LISTS ---
         default_rate = test_rate_dict.get(selected_t, 0) if selected_t != "--- Select ---" else 0
         entered_rate = col_t2.number_input("Rate (Rs.)", value=float(default_rate), key="rate_input")
 
@@ -226,10 +264,8 @@ else:
                 if cols[1].button("❌", key=f"del_{i}"):
                     st.session_state.temp_tests.pop(i)
                     st.rerun()
-            
             total_bill = sum(t['Rate'] for t in st.session_state.temp_tests)
             paid_amt = st.number_input("Paid Amount", 0, max_value=int(total_bill))
-            
             if st.button("💾 Final Save Record", use_container_width=True):
                 if p_name and st.session_state.temp_tests:
                     all_tests_str = ", ".join([t['Test'] for t in st.session_state.temp_tests])
@@ -313,7 +349,6 @@ else:
             csv = display_df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Download Filtered History", data=csv, file_name="BioCloud_History.csv", mime="text/csv")
         else: st.info("No data found in database.")
-
         st.divider()
         with st.expander("🖨️ Reprint Old Slip", expanded=True):
             if not df.empty:
@@ -326,6 +361,9 @@ else:
                         if selected_option != "-- Select --":
                             idx = options.index(selected_option)
                             p_to_print = filtered_search.iloc[idx]
+                            # Reprint PDF Option
+                            pdf_rep = download_pdf_receipt(p_to_print.tolist(), st.session_state.lab_phone)
+                            st.download_button(label="📥 Reprint HD PDF", data=pdf_rep, file_name=f"Reprint_{p_to_print['Invoice']}.pdf", mime="application/pdf")
                             show_receipt(p_to_print.tolist())
 
     elif menu == "⚙️ Lab Settings":
