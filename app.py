@@ -20,7 +20,11 @@ def get_full_data():
 
 def get_tests_list():
     try:
-        return conn.read(worksheet="tests_db", ttl="0")
+        df = conn.read(worksheet="tests_db", ttl="0")
+        # Fix: Converting Rate to numeric safely for large datasets
+        if not df.empty:
+            df['Rate'] = pd.to_numeric(df['Rate'], errors='coerce').fillna(0)
+        return df
     except:
         return pd.DataFrame([{"Test_Name": "CBC", "Rate": 500}, {"Test_Name": "Sugar", "Rate": 200}])
 
@@ -77,7 +81,16 @@ st.markdown("""
     @media print {
         .stApp { background: white !important; }
         .no-print { display: none !important; }
-        #receipt-container { width: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; image-rendering: -webkit-optimize-contrast !important; }
+        /* High Pixel Quality Print Settings */
+        #receipt-container { 
+            width: 100% !important; 
+            box-shadow: none !important; 
+            margin: 0 !important; 
+            padding: 10px !important; 
+            image-rendering: -webkit-optimize-contrast !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
         h1, h2, h3, p, td { color: black !important; font-family: 'Arial', sans-serif !important; }
     }
     </style>
@@ -181,8 +194,10 @@ else:
         st.subheader("Add Tests to Bill")
         col_t1, col_t2, col_t3 = st.columns([2, 1, 1])
         selected_t = col_t1.selectbox("Select Test", ["--- Select ---"] + test_options)
-        default_rate = int(test_rate_dict.get(selected_t, 0)) if selected_t != "--- Select ---" else 0
-        entered_rate = col_t2.number_input("Rate (Rs.)", value=default_rate, key="rate_input")
+        
+        # --- FIXED: SAFE DATA FETCHING FOR LARGE LISTS ---
+        default_rate = test_rate_dict.get(selected_t, 0) if selected_t != "--- Select ---" else 0
+        entered_rate = col_t2.number_input("Rate (Rs.)", value=float(default_rate), key="rate_input")
 
         if col_t3.button("➕ Add Test"):
             if selected_t != "--- Select ---":
