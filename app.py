@@ -13,6 +13,23 @@ import base64
 # --- 1. GOOGLE SHEETS CONNECTION CONFIG ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# --- [NEW] SMART TEST DATABASE (Ranges ke sath) ---
+# Aap yahan mazeed tests bhi isi tarah add kar sakte hain
+TEST_COMPONENTS = {
+    "CBC": [
+        {"name": "Hemoglobin (Hb)", "range": "13.0 - 17.0", "unit": "g/dL"},
+        {"name": "RBC Count", "range": "4.5 - 5.5", "unit": "mill/cmm"},
+        {"name": "WBC Count", "range": "4,000 - 10,000", "unit": "/cmm"},
+        {"name": "Platelets", "range": "150,000 - 450,000", "unit": "/cmm"},
+        {"name": "HCT / PCV", "range": "40 - 50", "unit": "%"},
+        {"name": "MCV", "range": "80 - 100", "unit": "fL"},
+        {"name": "MCH", "range": "27 - 32", "unit": "pg"}
+    ],
+    "SUGAR": [
+        {"name": "Fasting Glucose", "range": "70 - 110", "unit": "mg/dL"}
+    ]
+}
+
 # --- NEW: FUNCTION TO GET NORMAL RANGES ---
 def get_test_master_data():
     try:
@@ -21,7 +38,69 @@ def get_test_master_data():
     except:
         return pd.DataFrame(columns=["Test_Name", "Normal_Range", "Unit"])
 
-# --- NEW: PDF GENERATION FUNCTION (DOES NOT CHANGE DESIGN) ---
+# --- [NEW] PROFESSIONAL LAB REPORT GENERATOR ---
+def generate_professional_report(p_data, results_list):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Header
+    pdf.set_font("Arial", 'B', 22)
+    pdf.set_text_color(20, 80, 160)
+    pdf.cell(0, 10, "THE LIFE CARE CLINIC & LAB", ln=True, align='C')
+    pdf.set_font("Arial", '', 10)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 5, "MAJEED COLONY SEC 2, KARACHI | 0370-2926075", ln=True, align='C')
+    pdf.line(10, 32, 200, 32)
+    
+    # Patient Info Table
+    pdf.ln(10)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(30, 7, "Patient Name:", 0)
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(70, 7, f"{p_data['Name']}", 0)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(30, 7, "Date:", 0)
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(0, 7, f"{p_data['Date']}", 0, 1)
+    
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(30, 7, "Age / Gender:", 0)
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(70, 7, f"{p_data['Age']} / {p_data['Gender']}", 0)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(30, 7, "Invoice #:", 0)
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(0, 7, f"{p_data['Invoice']}", 0, 1)
+    
+    pdf.line(10, 55, 200, 55)
+    pdf.ln(10)
+
+    # Result Table Header
+    pdf.set_fill_color(230, 230, 230)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(70, 10, " TEST DESCRIPTION", 1, 0, 'L', True)
+    pdf.cell(40, 10, " RESULT", 1, 0, 'C', True)
+    pdf.cell(40, 10, " UNIT", 1, 0, 'C', True)
+    pdf.cell(40, 10, " NORMAL RANGE", 1, 1, 'C', True)
+    
+    # Results
+    pdf.set_font("Arial", '', 10)
+    for res in results_list:
+        pdf.cell(70, 9, f" {res['name']}", 1)
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(40, 9, f" {res['val']}", 1, 0, 'C')
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(40, 9, f" {res['unit']}", 1, 0, 'C')
+        pdf.cell(40, 9, f" {res['range']}", 1, 1, 'C')
+        
+    pdf.ln(20)
+    pdf.set_font("Arial", 'I', 9)
+    pdf.cell(0, 5, "Note: This is a computer generated report.", ln=True, align='C')
+    pdf.cell(0, 5, "Developed by Zain - 0370-2926075", ln=True, align='C')
+    
+    return pdf.output(dest='S').encode('latin-1')
+
+# --- NEW: FUNCTION TO DOWNLOAD RECEIPT (NO CHANGES) ---
 def download_pdf_receipt(v, lab_phone):
     pdf = FPDF(format=(80, 150))
     pdf.add_page()
@@ -165,8 +244,8 @@ if 'temp_tests' not in st.session_state: st.session_state.temp_tests = []
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
 if 'saved_mobile' not in st.session_state: st.session_state.saved_mobile = ""
-if 'lab_name' not in st.session_state: st.session_state.lab_name = "MAJEED COLONY SEC 2, KARACHI"
-if 'lab_phone' not in st.session_state: st.session_state.lab_phone = "03XX-XXXXXXX"
+if 'lab_name' not in st.session_state: st.session_state.lab_name = "THE LIFE CARE CLINIC & LAB"
+if 'lab_phone' not in st.session_state: st.session_state.lab_phone = "0370-2926075"
 
 def check_login(u, p):
     if u == "admin" and p == "lab786":
@@ -189,7 +268,6 @@ else:
     with st.sidebar:
         st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
         st.divider()
-        # --- ADDED "Test Master" TO MENU ---
         menu = st.radio("Navigation", ["🏠 Home", "📝 Registration", "💰 Dues & Reports", "🧪 Test Master", "💸 Expense Manager", "🔍 History Search", "📊 Excel History", "⚙️ Lab Settings"])
         st.divider()
         if st.checkbox("Enable Delete Option"):
@@ -287,161 +365,103 @@ else:
 
     elif menu == "💰 Dues & Reports":
         st.header("Update Records & Results")
-        master_db = get_test_master_data() # Get master ranges
         if not df.empty:
             pending_df = df[df["Status"] == "Pending"]
             if not pending_df.empty:
                 sel_patient = st.selectbox("Search Patient", pending_df["Name"].tolist())
                 p_data = df[df["Name"] == sel_patient].iloc[-1]
                 
-                # --- NEW: Show Normal Range for reference ---
-                test_name = p_data['Test'].split(", ")[0] # Pehla test uthao
-                match_range = master_db[master_db['Test_Name'] == test_name]
-                if not match_range.empty:
-                    st.warning(f"Normal Range for {test_name}: {match_range.iloc[0]['Normal_Range']} {match_range.iloc[0]['Unit']}")
+                st.markdown(f"### 📋 Patient: {p_data['Name']} | Test: {p_data['Test']}")
+                
+                # --- [NEW] SMART RESULT ENTRY ---
+                results_entry = []
+                booked_tests = p_data['Test'].split(", ")
+                
+                with st.container(border=True):
+                    st.subheader("Enter Lab Values")
+                    for bt in booked_tests:
+                        # Agar test TEST_COMPONENTS mein hai (e.g. CBC)
+                        if bt.upper() in TEST_COMPONENTS:
+                            st.write(f"🔬 **{bt} Details**")
+                            for comp in TEST_COMPONENTS[bt.upper()]:
+                                c1, c2, c3 = st.columns([3, 2, 2])
+                                val = c1.text_input(f"{comp['name']}", key=f"{p_data['ID']}_{comp['name']}")
+                                c2.info(f"Range: {comp['range']}")
+                                c3.write(f"Unit: {comp['unit']}")
+                                results_entry.append({"name": comp['name'], "val": val, "range": comp['range'], "unit": comp['unit']})
+                        else:
+                            # Agar aam single test hai
+                            c1, c2 = st.columns(2)
+                            val = c1.text_input(f"{bt} Result", key=f"{p_data['ID']}_{bt}")
+                            results_entry.append({"name": bt, "val": val, "range": "-", "unit": "-"})
 
-                st.info(f"Test: {p_data['Test']} | Dues: Rs. {p_data['Remaining']}")
                 c_a, c_b = st.columns(2)
-                add_p = c_a.number_input("Add More Payment", 0)
-                res_v = c_b.text_input("Enter Result", value=p_data['Result'])
-                if st.button("Update & Save Record"):
+                add_p = c_a.number_input("Add More Payment (Rs.)", 0)
+                
+                if st.button("💾 Save Results & Generate PDF", use_container_width=True):
+                    # Save to Sheet logic
                     new_paid = p_data["Paid_Amount"] + add_p
                     new_rem = p_data["Total_Bill"] - new_paid
-                    df.loc[df["ID"] == p_data["ID"], ["Paid_Amount", "Remaining", "Status", "Result"]] = [new_paid, new_rem, ("Paid" if new_rem<=0 else "Pending"), res_v]
+                    res_summary = ", ".join([f"{r['name']}:{r['val']}" for r in results_entry])
+                    
+                    df.loc[df["ID"] == p_data["ID"], ["Paid_Amount", "Remaining", "Status", "Result"]] = [new_paid, new_rem, ("Paid" if new_rem<=0 else "Pending"), res_summary]
                     conn.update(worksheet="data_db", data=df)
-                    st.success("Cloud Updated!")
-                    st.rerun()
+                    
+                    # PDF Generate
+                    report_pdf = generate_professional_report(p_data, results_entry)
+                    st.download_button("📥 Download Final Lab Report", data=report_pdf, file_name=f"Report_{p_data['Name']}.pdf", mime="application/pdf")
+                    st.success("Record Updated Successfully!")
             else: st.info("Koi Pending record nahi hai.")
 
-    # --- NEW SECTION: TEST MASTER ---
     elif menu == "🧪 Test Master":
-        st.header("🧪 1500+ Test Database Settings")
+        st.header("🧪 Test Database Settings")
         master_df = get_test_master_data()
-        
-        tab1, tab2, tab3 = st.tabs(["🔍 View/Search", "➕ Add/Edit", "🚀 Bulk Sync"])
-        
+        tab1, tab2 = st.tabs(["🔍 View Database", "➕ Add New"])
         with tab1:
-            search = st.text_input("Search Test Name...")
-            if search:
-                disp = master_df[master_df['Test_Name'].str.contains(search, case=False, na=False)]
-            else:
-                disp = master_df.head(20)
-            st.dataframe(disp, use_container_width=True)
-            st.info(f"Total Tests in Database: {len(master_df)}")
-            
+            st.dataframe(master_df, use_container_width=True)
         with tab2:
             with st.form("master_form"):
                 m_name = st.text_input("Test Name")
-                m_range = st.text_input("Normal Range (e.g. 70-110)")
-                m_unit = st.text_input("Unit (e.g. mg/dL)")
-                if st.form_submit_button("Save to Master"):
+                m_range = st.text_input("Normal Range")
+                m_unit = st.text_input("Unit")
+                if st.form_submit_button("Save"):
                     new_m = pd.DataFrame([[m_name, m_range, m_unit]], columns=["Test_Name", "Normal_Range", "Unit"])
-                    updated_m = pd.concat([master_df, new_m], ignore_index=True)
-                    conn.update(worksheet="master_tests_db", data=updated_m)
-                    st.success("Test Master Updated!")
-                    st.rerun()
-        
-        with tab3:
-            st.subheader("Sync 1500+ Tests")
-            if st.button("🚀 Upload Full List to Cloud"):
-                # Ye list wahi hai jo aapne di thi
-                full_list = ["DLC", "RBCCount", "Eosinophil Count", "Platelet Count", "BT", "CT", "ESR", "PCV Hematocrit", "Complete Hemogram", "PBF for Type of Anemia", "Blood Grouping", "PT INR", "APTT", "G6PD", "Reticulocyte count", "d-Dimer", "B Glucose", "B urea", "S Creatinine", "S Bilirubin Total", "T Protein", "S Albumin", "S Calcium", "S Phosphorus", "S Uric Acid", "T Cholesterol", "Triglyceride", "HDL Cholesterol", "Serum Sodium", "Serum Potassium", "Serum Chloride", "S SGOT", "S SGPT", "ALP Alkaline Phosphatase", "Amylase", "CPK-MB", "HbA1C Glycated Haemoglobin", "TSH", "fT3 free Tri-iodothyronine", "fT4 free Thyroxine"] # ... and others
-                # Yahan hum existing tests ko nahi chherenge
-                existing = master_df['Test_Name'].tolist()
-                to_add = [x for x in full_list if x not in existing]
-                if to_add:
-                    new_entries = pd.DataFrame({'Test_Name': to_add, 'Normal_Range': '-', 'Unit': '-'})
-                    final_m = pd.concat([master_df, new_entries], ignore_index=True)
-                    conn.update(worksheet="master_tests_db", data=final_m)
-                    st.success(f"{len(to_add)} Tests added successfully!")
-                else:
-                    st.info("Sare tests pehle se mojood hain.")
+                    conn.update(worksheet="master_tests_db", data=pd.concat([master_df, new_m]))
+                    st.success("Saved!")
 
     elif menu == "💸 Expense Manager":
-        st.header("💸 Kharcha Pani (Cloud Backup)")
+        st.header("💸 Kharcha Pani")
         ex_df = get_expense_data()
         tab1, tab2 = st.tabs(["➕ Add Expense", "📊 Expense Reports"])
         with tab1:
-            with st.expander("Enter New Expense Details", expanded=True):
+            with st.expander("Enter New Expense", expanded=True):
                 e_cat = st.selectbox("Category", ["Staff Salary", "Chemicals/Kits", "Rent/Bills", "Tea/Food", "Other"])
                 e_desc = st.text_input("Description")
                 e_amt = st.number_input("Amount", 0)
                 if st.button("Save Expense"):
                     new_ex = pd.DataFrame([[today_dt, e_cat, e_desc, e_amt]], columns=["Date", "Category", "Description", "Amount"])
                     save_expense_gsheet(new_ex)
-                    st.success("Expense Saved to Sheet!")
+                    st.success("Saved!")
                     st.rerun()
         with tab2:
-            st.subheader("Filter Expenses")
-            f_col1, f_col2 = st.columns(2)
-            view_type = f_col1.selectbox("View By", ["Daily", "Monthly", "Yearly", "All Time"])
             if not ex_df.empty:
-                ex_df['Date'] = pd.to_datetime(ex_df['Date']).dt.date
-                if view_type == "Daily": filtered_ex = ex_df[ex_df['Date'] == today_dt]
-                elif view_type == "Monthly": filtered_ex = ex_df[pd.to_datetime(ex_df['Date']).dt.month == today_dt.month]
-                elif view_type == "Yearly": filtered_ex = ex_df[pd.to_datetime(ex_df['Date']).dt.year == today_dt.year]
-                else: filtered_ex = ex_df
-                total_ex = filtered_ex['Amount'].sum()
-                st.markdown(f"### Total Expense ({view_type}): **Rs. {total_ex}**")
-                st.dataframe(filtered_ex, use_container_width=True)
-                if st.button("🗑️ Clear Expense History"):
-                    empty_ex = pd.DataFrame(columns=["Date", "Category", "Description", "Amount"])
-                    conn.update(worksheet="expenses_db", data=empty_ex)
-                    st.rerun()
+                st.dataframe(ex_df, use_container_width=True)
 
     elif menu == "🔍 History Search":
-        st.header("🔍 Advanced Patient Search")
-        search_query = st.text_input("Search by Name, Mobile, ID or Invoice #")
+        st.header("🔍 Search Records")
+        search_query = st.text_input("Search Name/ID/Invoice")
         if search_query:
             hist = df[df.apply(lambda row: row.astype(str).str.contains(search_query, case=False).any(), axis=1)]
-            if not hist.empty:
-                st.write(f"Found {len(hist)} records:")
-                st.dataframe(hist, use_container_width=True)
-            else: st.warning("No record found.")
+            st.dataframe(hist)
 
     elif menu == "📊 Excel History":
-        st.header("📊 Lab Database History")
-        if not df.empty:
-            st.subheader("Filter Data")
-            ex_search = st.text_input("Search anything in table...", key="ex_search")
-            display_df = df[df.apply(lambda row: row.astype(str).str.contains(ex_search, case=False).any(), axis=1)] if ex_search else df
-            st.dataframe(display_df, use_container_width=True)
-            csv = display_df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 Download Filtered History", data=csv, file_name="BioCloud_History.csv", mime="text/csv")
-        else: st.info("No data found in database.")
-        st.divider()
-        with st.expander("🖨️ Reprint Old Slip", expanded=True):
-            if not df.empty:
-                reprint_term = st.text_input("Reprint Search (Name/Mobile/Inv)")
-                if reprint_term:
-                    filtered_search = df[df.apply(lambda row: row.astype(str).str.contains(reprint_term, case=False).any(), axis=1)]
-                    if not filtered_search.empty:
-                        options = filtered_search.apply(lambda x: f"{x['Name']} | {x['Invoice']} | {x['Date']}", axis=1).tolist()
-                        selected_option = st.selectbox("Select Patient to Print", ["-- Select --"] + options)
-                        if selected_option != "-- Select --":
-                            idx = options.index(selected_option)
-                            p_to_print = filtered_search.iloc[idx]
-                            pdf_rep = download_pdf_receipt(p_to_print.tolist(), st.session_state.lab_phone)
-                            st.download_button(label="📥 Reprint HD PDF", data=pdf_rep, file_name=f"Reprint_{p_to_print['Invoice']}.pdf", mime="application/pdf")
-                            show_receipt(p_to_print.tolist())
+        st.header("📊 Full History")
+        st.dataframe(df, use_container_width=True)
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download History", data=csv, file_name="Lab_History.csv")
 
     elif menu == "⚙️ Lab Settings":
-        st.header("⚙️ Lab System Settings")
-        st.subheader("💰 Cash & Profit")
-        ex_df = get_expense_data()
-        today_ex = ex_df[ex_df['Date'] == today_dt]['Amount'].sum() if not ex_df.empty else 0
-        if not df.empty:
-            cash_df = df[df['Date'] == today]
-            total_cash = pd.to_numeric(cash_df['Paid_Amount'], errors='coerce').sum()
-            total_dues = pd.to_numeric(cash_df['Remaining'], errors='coerce').sum()
-            net_profit = total_cash - today_ex
-        else: total_cash, total_dues, net_profit = 0, 0, 0
-        stat_c1, stat_c2, stat_c3 = st.columns(3)
-        stat_c1.metric("Kul Cash", f"Rs. {total_cash}")
-        stat_c2.metric("Aaj Ka Kharcha", f"Rs. {today_ex}")
-        stat_c3.metric("Net Profit", f"Rs. {net_profit}")
-        st.divider()
-        st.subheader("📍 Lab Info")
+        st.header("⚙️ Lab Settings")
         c1, c2 = st.columns(2)
         st.session_state.lab_name = c1.text_input("Lab Name", value=st.session_state.lab_name)
         st.session_state.lab_phone = c2.text_input("Contact", value=st.session_state.lab_phone)
