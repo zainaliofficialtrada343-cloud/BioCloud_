@@ -27,20 +27,50 @@ def show_receipt(v):
         <head>
             <style>
                 @media print {{
-                    @page {{ size: auto; margin: 0mm; }}
-                    body {{ background: white; }}
+                    @page {{ size: auto; margin: 5mm; }}
+                    body {{ 
+                        background: white; 
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }}
                     .no-print {{ display: none !important; }}
-                    .receipt-container {{ border: none !important; box-shadow: none !important; padding: 10px !important; }}
+                    .receipt-container {{ 
+                        border: none !important; 
+                        box-shadow: none !important; 
+                        padding: 10px !important;
+                        width: 100% !important;
+                        /* Sharp Text for Print */
+                        text-rendering: optimizeLegibility !important;
+                        -webkit-font-smoothing: antialiased !important;
+                    }}
+                    /* Force black color for better contrast on paper */
+                    h1, b, td, th, p {{ color: #000000 !important; }}
                 }}
-                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; }}
+                
+                body {{ 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                    color: #333;
+                    /* Pixel Smoothing */
+                    -webkit-font-smoothing: antialiased;
+                    -moz-osx-font-smoothing: grayscale;
+                    text-rendering: optimizeLegibility;
+                }}
+                
                 .receipt-container {{
                     width: 420px;
                     margin: 0 auto;
                     padding: 20px;
                     background: white;
                     border: 1px solid #eee;
+                    image-rendering: -webkit-optimize-contrast;
                 }}
-                .header {{ text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px; }}
+                
+                .header {{ 
+                    text-align: center; 
+                    border-bottom: 3px solid #000; 
+                    padding-bottom: 10px; 
+                }}
+                
                 .btn-print {{ 
                     background: #2e7d32; color: white; border: none; padding: 12px 20px; 
                     border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 20px;
@@ -53,10 +83,10 @@ def show_receipt(v):
             
             <div class="receipt-container">
                 <div class="header">
-                    <h1 style="margin: 0; font-size: 26px;">THE LIFE CARE</h1>
+                    <h1 style="margin: 0; font-size: 26px; font-weight: 800;">THE LIFE CARE</h1>
                     <p style="margin: 5px 0; font-size: 14px;">MAJEED COLONY SEC 2, KARACHI</p>
                     <p style="margin: 2px 0; font-size: 15px; font-weight: bold;">Contact: {lab_phone}</p>
-                    <div style="border: 1px solid #000; display: inline-block; padding: 2px 15px; margin-top: 10px; font-weight: bold;">
+                    <div style="border: 2px solid #000; display: inline-block; padding: 2px 15px; margin-top: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
                         PATIENT RECEIPT
                     </div>
                 </div>
@@ -93,10 +123,10 @@ def show_receipt(v):
                     </tbody>
                 </table>
 
-                <div style="margin-top: 20px; border-top: 1px solid #000; padding-top: 10px;">
+                <div style="margin-top: 20px; border-top: 2px solid #000; padding-top: 10px;">
                     <table style="width: 100%; font-size: 15px; font-weight: bold;">
                         <tr><td>TOTAL BILL:</td><td align="right">Rs. {v[9]}</td></tr>
-                        <tr style="color: #555;"><td>PAID AMOUNT:</td><td align="right">Rs. {v[10]}</td></tr>
+                        <tr style="color: #444;"><td>PAID AMOUNT:</td><td align="right">Rs. {v[10]}</td></tr>
                         <tr style="font-size: 18px; border-top: 1px dashed #000;">
                             <td style="padding-top: 8px;">BALANCE:</td>
                             <td align="right" style="padding-top: 8px;">Rs. {v[11]}</td>
@@ -106,7 +136,7 @@ def show_receipt(v):
 
                 <div style="margin-top: 40px; text-align: center; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px;">
                     <p style="margin: 2px 0;">This is a computer generated report.</p>
-                    <p style="margin: 2px 0;"><b>Developed by Zain - 0370-2926075</b></p>
+                    <p style="margin: 2px 0; color: #000;"><b>Developed by Zain - 0370-2926075</b></p>
                 </div>
             </div>
         </body>
