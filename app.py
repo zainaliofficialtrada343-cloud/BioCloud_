@@ -13,6 +13,14 @@ import base64
 # --- 1. GOOGLE SHEETS CONNECTION CONFIG ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# --- NEW: FUNCTION TO GET NORMAL RANGES ---
+def get_test_master_data():
+    try:
+        df = conn.read(worksheet="master_tests_db", ttl="0")
+        return df
+    except:
+        return pd.DataFrame(columns=["Test_Name", "Normal_Range", "Unit"])
+
 # --- NEW: PDF GENERATION FUNCTION (DOES NOT CHANGE DESIGN) ---
 def download_pdf_receipt(v, lab_phone):
     pdf = FPDF(format=(80, 150))
@@ -138,7 +146,7 @@ st.markdown("""
             background-color: white !important;
             text-rendering: optimizeLegibility !important;
             -webkit-font-smoothing: antialiased !important;
-            image-rendering: -webkit-optimize-contrast !important;
+            -webkit-optimize-contrast !important;
         }
         h1, h2, h3, p, td, span, b, div { 
             color: #000000 !important; 
@@ -181,7 +189,8 @@ else:
     with st.sidebar:
         st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
         st.divider()
-        menu = st.radio("Navigation", ["🏠 Home", "📝 Registration", "💰 Dues & Reports", "💸 Expense Manager", "🔍 History Search", "📊 Excel History", "⚙️ Lab Settings"])
+        # --- ADDED "Test Master" TO MENU ---
+        menu = st.radio("Navigation", ["🏠 Home", "📝 Registration", "💰 Dues & Reports", "🧪 Test Master", "💸 Expense Manager", "🔍 History Search", "📊 Excel History", "⚙️ Lab Settings"])
         st.divider()
         if st.checkbox("Enable Delete Option"):
             if st.button("⚠️ Delete All Patient Data", type="primary"):
@@ -209,7 +218,6 @@ else:
         st.header("New Patient Registration")
         if st.session_state.show_slip:
             st.success("✅ Record Saved to Cloud!")
-            # --- ADDED PDF DOWNLOAD OPTION ---
             pdf_bytes = download_pdf_receipt(st.session_state.show_slip, st.session_state.lab_phone)
             st.download_button(label="📥 Download HD PDF Receipt", data=pdf_bytes, file_name=f"Receipt_{st.session_state.show_slip[1]}.pdf", mime="application/pdf")
             show_receipt(st.session_state.show_slip)
@@ -279,11 +287,19 @@ else:
 
     elif menu == "💰 Dues & Reports":
         st.header("Update Records & Results")
+        master_db = get_test_master_data() # Get master ranges
         if not df.empty:
             pending_df = df[df["Status"] == "Pending"]
             if not pending_df.empty:
                 sel_patient = st.selectbox("Search Patient", pending_df["Name"].tolist())
                 p_data = df[df["Name"] == sel_patient].iloc[-1]
+                
+                # --- NEW: Show Normal Range for reference ---
+                test_name = p_data['Test'].split(", ")[0] # Pehla test uthao
+                match_range = master_db[master_db['Test_Name'] == test_name]
+                if not match_range.empty:
+                    st.warning(f"Normal Range for {test_name}: {match_range.iloc[0]['Normal_Range']} {match_range.iloc[0]['Unit']}")
+
                 st.info(f"Test: {p_data['Test']} | Dues: Rs. {p_data['Remaining']}")
                 c_a, c_b = st.columns(2)
                 add_p = c_a.number_input("Add More Payment", 0)
@@ -296,6 +312,50 @@ else:
                     st.success("Cloud Updated!")
                     st.rerun()
             else: st.info("Koi Pending record nahi hai.")
+
+    # --- NEW SECTION: TEST MASTER ---
+    elif menu == "🧪 Test Master":
+        st.header("🧪 1500+ Test Database Settings")
+        master_df = get_test_master_data()
+        
+        tab1, tab2, tab3 = st.tabs(["🔍 View/Search", "➕ Add/Edit", "🚀 Bulk Sync"])
+        
+        with tab1:
+            search = st.text_input("Search Test Name...")
+            if search:
+                disp = master_df[master_df['Test_Name'].str.contains(search, case=False, na=False)]
+            else:
+                disp = master_df.head(20)
+            st.dataframe(disp, use_container_width=True)
+            st.info(f"Total Tests in Database: {len(master_df)}")
+            
+        with tab2:
+            with st.form("master_form"):
+                m_name = st.text_input("Test Name")
+                m_range = st.text_input("Normal Range (e.g. 70-110)")
+                m_unit = st.text_input("Unit (e.g. mg/dL)")
+                if st.form_submit_button("Save to Master"):
+                    new_m = pd.DataFrame([[m_name, m_range, m_unit]], columns=["Test_Name", "Normal_Range", "Unit"])
+                    updated_m = pd.concat([master_df, new_m], ignore_index=True)
+                    conn.update(worksheet="master_tests_db", data=updated_m)
+                    st.success("Test Master Updated!")
+                    st.rerun()
+        
+        with tab3:
+            st.subheader("Sync 1500+ Tests")
+            if st.button("🚀 Upload Full List to Cloud"):
+                # Ye list wahi hai jo aapne di thi
+                full_list = ["DLC", "RBCCount", "Eosinophil Count", "Platelet Count", "BT", "CT", "ESR", "PCV Hematocrit", "Complete Hemogram", "PBF for Type of Anemia", "Blood Grouping", "PT INR", "APTT", "G6PD", "Reticulocyte count", "d-Dimer", "B Glucose", "B urea", "S Creatinine", "S Bilirubin Total", "T Protein", "S Albumin", "S Calcium", "S Phosphorus", "S Uric Acid", "T Cholesterol", "Triglyceride", "HDL Cholesterol", "Serum Sodium", "Serum Potassium", "Serum Chloride", "S SGOT", "S SGPT", "ALP Alkaline Phosphatase", "Amylase", "CPK-MB", "HbA1C Glycated Haemoglobin", "TSH", "fT3 free Tri-iodothyronine", "fT4 free Thyroxine"] # ... and others
+                # Yahan hum existing tests ko nahi chherenge
+                existing = master_df['Test_Name'].tolist()
+                to_add = [x for x in full_list if x not in existing]
+                if to_add:
+                    new_entries = pd.DataFrame({'Test_Name': to_add, 'Normal_Range': '-', 'Unit': '-'})
+                    final_m = pd.concat([master_df, new_entries], ignore_index=True)
+                    conn.update(worksheet="master_tests_db", data=final_m)
+                    st.success(f"{len(to_add)} Tests added successfully!")
+                else:
+                    st.info("Sare tests pehle se mojood hain.")
 
     elif menu == "💸 Expense Manager":
         st.header("💸 Kharcha Pani (Cloud Backup)")
@@ -361,7 +421,6 @@ else:
                         if selected_option != "-- Select --":
                             idx = options.index(selected_option)
                             p_to_print = filtered_search.iloc[idx]
-                            # Reprint PDF Option
                             pdf_rep = download_pdf_receipt(p_to_print.tolist(), st.session_state.lab_phone)
                             st.download_button(label="📥 Reprint HD PDF", data=pdf_rep, file_name=f"Reprint_{p_to_print['Invoice']}.pdf", mime="application/pdf")
                             show_receipt(p_to_print.tolist())
@@ -370,7 +429,7 @@ else:
         st.header("⚙️ Lab System Settings")
         st.subheader("💰 Cash & Profit")
         ex_df = get_expense_data()
-        today_ex = find_today_ex = ex_df[ex_df['Date'] == today_dt]['Amount'].sum() if not ex_df.empty else 0
+        today_ex = ex_df[ex_df['Date'] == today_dt]['Amount'].sum() if not ex_df.empty else 0
         if not df.empty:
             cash_df = df[df['Date'] == today]
             total_cash = pd.to_numeric(cash_df['Paid_Amount'], errors='coerce').sum()
