@@ -431,7 +431,7 @@ else:
                     st.success("Saved!")
                     st.rerun()
         with tab2:
-            if not ex_df.empty:
+            if not_ex_df.empty:
                 st.dataframe(ex_df, use_container_width=True)
 
     elif menu == "🔍 History Search":
@@ -442,10 +442,49 @@ else:
             st.dataframe(hist)
 
     elif menu == "📊 Excel History":
-        st.header("📊 Full History")
-        st.dataframe(df, use_container_width=True)
+        st.header("📊 Full History & Re-Print")
+        
+        # --- ADDED: SEARCH BOX FOR EXCEL HISTORY ---
+        search_inv = st.text_input("Search by Invoice No or Name")
+        
+        if search_inv:
+            # Filtering the dataframe
+            filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_inv, case=False).any(), axis=1)]
+            st.dataframe(filtered_df, use_container_width=True)
+            
+            if not filtered_df.empty:
+                st.subheader("Old Print Nikalain")
+                # Dropdown for selecting specific patient from search results
+                selected_patient_row = st.selectbox("Select Record to Print", filtered_df.index, format_func=lambda x: f"{filtered_df.loc[x, 'Invoice']} - {filtered_df.loc[x, 'Name']}")
+                
+                v = filtered_df.loc[selected_patient_row].tolist()
+                
+                col_btn1, col_btn2 = st.columns(2)
+                
+                # 1. Print Receipt
+                pdf_receipt = download_pdf_receipt(v, st.session_state.lab_phone)
+                col_btn1.download_button(f"📥 Download Receipt ({v[1]})", data=pdf_receipt, file_name=f"Old_Receipt_{v[1]}.pdf")
+                
+                # 2. Print Report (If result exists)
+                if v[12] != "-":
+                    # Convert result string back to list for report generator
+                    try:
+                        res_list = []
+                        parts = v[12].split(", ")
+                        for p in parts:
+                            name_val = p.split(":")
+                            res_list.append({"name": name_val[0], "val": name_val[1], "range": "-", "unit": "-"})
+                        
+                        report_pdf = generate_professional_report(filtered_df.loc[selected_patient_row], res_list)
+                        col_btn2.download_button(f"📥 Download Report ({v[1]})", data=report_pdf, file_name=f"Old_Report_{v[3]}.pdf")
+                    except:
+                        col_btn2.warning("Report format purani hai.")
+        else:
+            st.dataframe(df, use_container_width=True)
+
+        st.divider()
         csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Download History", data=csv, file_name="Lab_History.csv")
+        st.download_button("📥 Download Full CSV History", data=csv, file_name="Lab_History.csv")
 
     elif menu == "⚙️ Lab Settings":
         st.header("⚙️ Lab Settings")
