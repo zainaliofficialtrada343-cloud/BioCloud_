@@ -353,52 +353,68 @@ else:
     elif menu == "💰 Dues & Reports":
         st.header("Update Records & Results")
         if not df.empty:
-            pending_df = df[df["Status"] == "Pending"]
-            if not pending_df.empty:
-                sel_patient = st.selectbox("Search Patient", pending_df["Name"].tolist())
-                p_data = df[df["Name"] == sel_patient].iloc[-1]
+            # --- IMPROVED: Filter & Search Selection ---
+            report_type = st.radio("Show Patients:", ["Pending Only", "All Patients"], horizontal=True)
+            
+            if report_type == "Pending Only":
+                selectable_df = df[df["Status"] == "Pending"]
+            else:
+                selectable_df = df
                 
-                st.markdown(f"### 📋 Patient: {p_data['Name']} | Test: {p_data['Test']}")
+            if not selectable_df.empty:
+                # Add search box for easier selection
+                search_term = st.text_input("Quick Search (Name/Invoice)")
+                if search_term:
+                    selectable_df = selectable_df[selectable_df.apply(lambda row: row.astype(str).str.contains(search_term, case=False).any(), axis=1)]
                 
-                results_entry = []
-                booked_tests = p_data['Test'].split(", ")
-                
-                with st.container(border=True):
-                    st.subheader("Enter Lab Values")
-                    for bt in booked_tests:
-                        if bt.upper() in TEST_COMPONENTS:
-                            st.write(f"🔬 **{bt} Details**")
-                            for comp in TEST_COMPONENTS[bt.upper()]:
-                                c1, c2, c3 = st.columns([3, 2, 2])
-                                val = c1.text_input(f"{comp['name']}", key=f"{p_data['ID']}_{comp['name']}")
-                                c2.info(f"Range: {comp['range']}")
-                                c3.write(f"Unit: {comp['unit']}")
-                                results_entry.append({"name": comp['name'], "val": val, "range": comp['range'], "unit": comp['unit']})
-                        else:
-                            c1, c2 = st.columns(2)
-                            val = c1.text_input(f"{bt} Result", key=f"{p_data['ID']}_{bt}")
-                            results_entry.append({"name": bt, "val": val, "range": "-", "unit": "-"})
+                if not selectable_df.empty:
+                    sel_patient = st.selectbox("Select Patient to Generate Report", selectable_df["Name"].tolist())
+                    p_data = selectable_df[selectable_df["Name"] == sel_patient].iloc[-1]
+                    
+                    st.markdown(f"### 📋 Patient: {p_data['Name']} | Test: {p_data['Test']}")
+                    
+                    results_entry = []
+                    booked_tests = p_data['Test'].split(", ")
+                    
+                    with st.container(border=True):
+                        st.subheader("Enter Lab Values")
+                        for bt in booked_tests:
+                            if bt.upper() in TEST_COMPONENTS:
+                                st.write(f"🔬 **{bt} Details**")
+                                for comp in TEST_COMPONENTS[bt.upper()]:
+                                    c1, c2, c3 = st.columns([3, 2, 2])
+                                    val = c1.text_input(f"{comp['name']}", key=f"{p_data['ID']}_{comp['name']}")
+                                    c2.info(f"Range: {comp['range']}")
+                                    c3.write(f"Unit: {comp['unit']}")
+                                    results_entry.append({"name": comp['name'], "val": val, "range": comp['range'], "unit": comp['unit']})
+                            else:
+                                c1, c2 = st.columns(2)
+                                val = c1.text_input(f"{bt} Result", key=f"{p_data['ID']}_{bt}")
+                                results_entry.append({"name": bt, "val": val, "range": "-", "unit": "-"})
 
-                c_a, c_b = st.columns(2)
-                add_p = c_a.number_input("Add More Payment (Rs.)", 0)
-                
-                if st.button("💾 Save Results & Generate PDF", use_container_width=True):
-                    new_paid = p_data["Paid_Amount"] + add_p
-                    new_rem = p_data["Total_Bill"] - new_paid
-                    res_summary = ", ".join([f"{r['name']}:{r['val']}" for r in results_entry])
+                    c_a, c_b = st.columns(2)
+                    add_p = c_a.number_input("Add More Payment (Rs.)", 0)
                     
-                    df.loc[df["ID"] == p_data["ID"], ["Paid_Amount", "Remaining", "Status", "Result"]] = [new_paid, new_rem, ("Paid" if new_rem<=0 else "Pending"), res_summary]
-                    conn.update(worksheet="data_db", data=df)
-                    
-                    report_pdf = generate_professional_report(p_data, results_entry)
-                    st.download_button("📥 Download Final Lab Report", data=report_pdf, file_name=f"Report_{p_data['Name']}.pdf", mime="application/pdf")
-                    
-                    # --- PRINT BUTTON FOR REPORT ---
-                    if st.button("🖨️ Print Report"):
-                        st.components.v1.html("<script>window.print();</script>", height=0)
+                    if st.button("💾 Save Results & Generate PDF", use_container_width=True):
+                        new_paid = p_data["Paid_Amount"] + add_p
+                        new_rem = p_data["Total_Bill"] - new_paid
+                        res_summary = ", ".join([f"{r['name']}:{r['val']}" for r in results_entry])
                         
-                    st.success("Record Updated Successfully!")
-            else: st.info("Koi Pending record nahi hai.")
+                        df.loc[df["ID"] == p_data["ID"], ["Paid_Amount", "Remaining", "Status", "Result"]] = [new_paid, new_rem, ("Paid" if new_rem<=0 else "Pending"), res_summary]
+                        conn.update(worksheet="data_db", data=df)
+                        
+                        report_pdf = generate_professional_report(p_data, results_entry)
+                        st.download_button("📥 Download Final Lab Report", data=report_pdf, file_name=f"Report_{p_data['Name']}.pdf", mime="application/pdf")
+                        
+                        # --- PRINT BUTTON FOR REPORT ---
+                        if st.button("🖨️ Print Report"):
+                            st.components.v1.html("<script>window.print();</script>", height=0)
+                            
+                        st.success("Record Updated Successfully!")
+                else:
+                    st.warning("No matching patient found.")
+            else: 
+                st.info("Koi Pending record nahi hai.")
 
     elif menu == "🧪 Test Master":
         st.header("🧪 Test Database Settings")
@@ -431,7 +447,7 @@ else:
                     st.success("Saved!")
                     st.rerun()
         with tab2:
-            if not_ex_df.empty:
+            if not ex_df.empty:
                 st.dataframe(ex_df, use_container_width=True)
 
     elif menu == "🔍 History Search":
