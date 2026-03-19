@@ -9,11 +9,19 @@ from streamlit_gsheets import GSheetsConnection
 # --- ADDED FOR PDF ---
 from fpdf import FPDF
 import base64
+import urllib.parse  # WhatsApp link ke liye
+
+# --- IMPORT YOUR MASTER DATABASE FILE ---
+try:
+    from test_ranges import MASTER_TEST_DATA
+except ImportError:
+    MASTER_TEST_DATA = {}
 
 # --- 1. GOOGLE SHEETS CONNECTION CONFIG ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- [NEW] SMART TEST DATABASE (Ranges ke sath) ---
+# Ye fallback ke liye hai agar test_ranges.py mein data na ho
 TEST_COMPONENTS = {
     "CBC": [
         {"name": "Hemoglobin (Hb)", "range": "13.0 - 17.0", "unit": "g/dL"},
@@ -28,6 +36,27 @@ TEST_COMPONENTS = {
         {"name": "Fasting Glucose", "range": "70 - 110", "unit": "mg/dL"}
     ]
 }
+
+# --- NEW: FUNCTION TO SEND WHATSAPP MESSAGE ---
+def send_whatsapp_receipt(p_name, p_mobile, inv, total, rem, tests):
+    # Message formatting
+    msg = f"*LAB RECEIPT - {st.session_state.lab_name}*\n\n"
+    msg += f"Patient: {p_name}\n"
+    msg += f"Inv #: {inv}\n"
+    msg += f"Tests: {tests}\n"
+    msg += f"Total Bill: Rs. {total}\n"
+    msg += f"Balance: Rs. {rem}\n\n"
+    msg += "Aapki report jald hi ready ho jayegi. Shukriya!"
+    
+    # URL Encoding for WhatsApp
+    encoded_msg = urllib.parse.quote(msg)
+    # Cleaning mobile number (Removing leading 0 if needed)
+    phone = str(p_mobile).strip().replace("-", "")
+    if phone.startswith("0"):
+        phone = "92" + phone[1:]
+    
+    whatsapp_url = f"https://wa.me/{phone}?text={encoded_msg}"
+    return whatsapp_url
 
 # --- NEW: FUNCTION TO GET NORMAL RANGES ---
 def get_test_master_data():
@@ -95,7 +124,7 @@ def generate_professional_report(p_data, results_list):
     pdf.ln(20)
     pdf.set_font("Arial", 'I', 9)
     pdf.cell(0, 5, "Note: This is a computer generated report.", ln=True, align='C')
-    pdf.cell(0, 5, "Developed by Zain - 0370-2926075", ln=True, align='C')
+    pdf.cell(0, 5, f"Developed by {st.session_state.lab_name}", ln=True, align='C')
     
     return pdf.output(dest='S').encode('latin-1')
 
@@ -277,12 +306,18 @@ else:
         if st.session_state.show_slip:
             st.success("✅ Record Saved to Cloud!")
             
-            # --- PRINT BUTTON ADDED HERE ---
-            c_p1, c_p2 = st.columns(2)
-            pdf_bytes = download_pdf_receipt(st.session_state.show_slip, st.session_state.lab_phone)
-            c_p1.download_button(label="📥 Download PDF Receipt", data=pdf_bytes, file_name=f"Receipt_{st.session_state.show_slip[1]}.pdf", mime="application/pdf")
+            # --- PRINT & WHATSAPP BUTTONS ---
+            v = st.session_state.show_slip
+            c_p1, c_p2, c_p3 = st.columns(3)
             
-            if c_p2.button("🖨️ Direct Print Receipt"):
+            pdf_bytes = download_pdf_receipt(v, st.session_state.lab_phone)
+            c_p1.download_button(label="📥 Download PDF Receipt", data=pdf_bytes, file_name=f"Receipt_{v[1]}.pdf", mime="application/pdf")
+            
+            # WhatsApp Link
+            wa_link = send_whatsapp_receipt(v[3], v[4], v[1], v[9], v[11], v[8])
+            c_p2.link_button("📲 Send WhatsApp Receipt", wa_link)
+
+            if c_p3.button("🖨️ Direct Print Receipt"):
                 st.components.v1.html("<script>window.print();</script>", height=0)
 
             show_receipt(st.session_state.show_slip)
@@ -353,7 +388,6 @@ else:
     elif menu == "💰 Dues & Reports":
         st.header("Update Records & Results")
         if not df.empty:
-            # --- IMPROVED: Filter & Search Selection ---
             report_type = st.radio("Show Patients:", ["Pending Only", "All Patients"], horizontal=True)
             
             if report_type == "Pending Only":
@@ -362,7 +396,6 @@ else:
                 selectable_df = df
                 
             if not selectable_df.empty:
-                # Add search box for easier selection
                 search_term = st.text_input("Quick Search (Name/Invoice)")
                 if search_term:
                     selectable_df = selectable_df[selectable_df.apply(lambda row: row.astype(str).str.contains(search_term, case=False).any(), axis=1)]
@@ -379,7 +412,26 @@ else:
                     with st.container(border=True):
                         st.subheader("Enter Lab Values")
                         for bt in booked_tests:
-                            if bt.upper() in TEST_COMPONENTS:
+                            # Search in test_ranges.py or fallback to TEST_COMPONENTS
+                            if bt in MASTER_TEST_DATA:
+                                st.write(f"🔬 **{bt} Details**")
+                                test_comp = MASTER_TEST_DATA[bt]
+                                # Agar list format mein hai to loop chalayein
+                                if isinstance(test_comp, list):
+                                    for comp in test_comp:
+                                        c1, c2, c3 = st.columns([3, 2, 2])
+                                        val = c1.text_input(f"{comp['name']}", key=f"{p_data['ID']}_{comp['name']}")
+                                        c2.info(f"Range: {comp['range']}")
+                                        c3.write(f"Unit: {comp['unit']}")
+                                        results_entry.append({"name": comp['name'], "val": val, "range": comp['range'], "unit": comp['unit']})
+                                else:
+                                    c1, c2, c3 = st.columns([3, 2, 2])
+                                    val = c1.text_input(f"{bt}", key=f"{p_data['ID']}_{bt}")
+                                    c2.info(f"Range: {test_comp['range']}")
+                                    c3.write(f"Unit: {test_comp['unit']}")
+                                    results_entry.append({"name": bt, "val": val, "range": test_comp['range'], "unit": test_comp['unit']})
+                            
+                            elif bt.upper() in TEST_COMPONENTS:
                                 st.write(f"🔬 **{bt} Details**")
                                 for comp in TEST_COMPONENTS[bt.upper()]:
                                     c1, c2, c3 = st.columns([3, 2, 2])
@@ -406,7 +458,6 @@ else:
                         report_pdf = generate_professional_report(p_data, results_entry)
                         st.download_button("📥 Download Final Lab Report", data=report_pdf, file_name=f"Report_{p_data['Name']}.pdf", mime="application/pdf")
                         
-                        # --- PRINT BUTTON FOR REPORT ---
                         if st.button("🖨️ Print Report"):
                             st.components.v1.html("<script>window.print();</script>", height=0)
                             
@@ -459,31 +510,23 @@ else:
 
     elif menu == "📊 Excel History":
         st.header("📊 Full History & Re-Print")
-        
-        # --- ADDED: SEARCH BOX FOR EXCEL HISTORY ---
         search_inv = st.text_input("Search by Invoice No or Name")
         
         if search_inv:
-            # Filtering the dataframe
             filtered_df = df[df.apply(lambda row: row.astype(str).str.contains(search_inv, case=False).any(), axis=1)]
             st.dataframe(filtered_df, use_container_width=True)
             
             if not filtered_df.empty:
                 st.subheader("Old Print Nikalain")
-                # Dropdown for selecting specific patient from search results
                 selected_patient_row = st.selectbox("Select Record to Print", filtered_df.index, format_func=lambda x: f"{filtered_df.loc[x, 'Invoice']} - {filtered_df.loc[x, 'Name']}")
                 
                 v = filtered_df.loc[selected_patient_row].tolist()
-                
                 col_btn1, col_btn2 = st.columns(2)
                 
-                # 1. Print Receipt
                 pdf_receipt = download_pdf_receipt(v, st.session_state.lab_phone)
                 col_btn1.download_button(f"📥 Download Receipt ({v[1]})", data=pdf_receipt, file_name=f"Old_Receipt_{v[1]}.pdf")
                 
-                # 2. Print Report (If result exists)
                 if v[12] != "-":
-                    # Convert result string back to list for report generator
                     try:
                         res_list = []
                         parts = v[12].split(", ")
