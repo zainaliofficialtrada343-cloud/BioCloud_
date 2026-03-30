@@ -416,33 +416,7 @@ else:
                     
                     st.success("Record Saved!")
                     st.rerun() 
-            if st.button("💾 Final Save Record", use_container_width=True):
-                if p_name:
-                    # 1. Tests aur Meds ko jama karo
-                    all_tests = [t['Test'] for t in st.session_state.temp_tests]
-                    all_meds = [m['Med'] for m in st.session_state.temp_meds] if 'temp_meds' in st.session_state else []
-                    
-                    # 2. Aik hi string mein save karne ke liye (ya alag column hai toh wahan daalein)
-                    full_details = "Tests: " + ", ".join(all_tests)
-                    if all_meds:
-                        full_details += " | Meds: " + ", ".join(all_meds)
-
-                    rem = total_bill - paid_amt
-                    new_id = len(df) + 1
-                    
-                    # 3. Data list (Check karein aapki sheet ke columns ke mutabiq ho)
-                    data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, full_details, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
-                    
-                    save_record_local(pd.DataFrame([data_list], columns=required_cols))
-                    
-                    # 4. Cleanup
-                    st.session_state.show_slip = data_list 
-                    st.session_state.temp_tests = [] 
-                    if 'temp_meds' in st.session_state:
-                        st.session_state.temp_meds = []
-                    
-                    st.success("Record Saved!")
-                    st.rerun()
+    
                 else:
                     st.error("Please enter Patient Name first!")
     elif menu == "💰 Dues & Reports":
