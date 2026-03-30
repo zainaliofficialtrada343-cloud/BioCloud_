@@ -1,63 +1,63 @@
 import streamlit as st
 
 def show_receipt(v):
+    """
+    v is the list of patient data.
+    v[0]: Token, v[1]: Inv, v[2]: Date, v[3]: Name, v[4]: Mobile, 
+    v[5]: Age, v[6]: Gen, v[7]: Ref/Doctor, v[8]: Details
+    """
     try:
-        # Lab Settings se data lena
-        l_name = st.session_state.get('lab_name', 'JAWAD MEDICAL CENTER')
+        # Settings se Name aur Info uthana
+        l_name = st.session_state.get('lab_name', '( THE LIFE CARE )')
         l_addr = st.session_state.get('lab_addr', 'MAJEED COLONY SEC 2, KARACHI')
         l_phone = st.session_state.get('lab_phone', '0370-2906075')
 
-        # Items (Tests/Meds) taiyar karna
-        details_raw = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ")
-        items_list = details_raw.split(", ")
-        items_html = ""
-        for item in items_list:
-            if item.strip():
-                items_html += f"<tr><td>{item}</td><td align='center'>1</td><td align='right'>-</td></tr>"
-
-        # Ref Doctor ka data
-        dr_name = v[7] if len(v)>7 else 'SELF'
-
-        # ASLI DESIGN (Purana Style + 350px Pixel Fix)
-        # Maine f-string ko break kiya hai taake code display wala error na aaye
-        style = """
+        receipt_html = f"""
         <style>
-            .slip-main {
+            @media print {{
+                @page {{ size: auto; margin: 0mm; }}
+                body {{ background: white !important; margin: 0 !important; padding: 0 !important; }}
+                header, footer, .sidebar, [data-testid="stSidebar"], [data-testid="stHeader"], .stButton {{
+                    display: none !important;
+                }}
+                .receipt-container {{
+                    width: 350px !important;
+                    border: none !important;
+                    margin: 0 !important;
+                    padding: 10px !important;
+                    visibility: visible !important;
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                }}
+                body * {{ visibility: hidden; }}
+                .receipt-container, .receipt-container * {{ visibility: visible !important; }}
+            }}
+            .receipt-container {{
                 width: 350px;
                 border: 2px solid #000;
                 padding: 15px;
                 font-family: 'Courier New', Courier, monospace;
-                background-color: white;
+                margin: 20px auto;
+                background: white;
                 color: black;
-                margin: auto;
-            }
-            .txt-center { text-align: center; margin: 0; }
-            .token-style { 
-                text-align: center; border: 2px solid #000; 
-                margin: 10px 0; padding: 5px; font-size: 18px; font-weight: bold; 
-            }
-            .dr-box { border: 1px solid #000; margin-top: 5px; padding: 5px; font-size: 12px; }
+            }}
+            .header-title {{ text-align: center; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; }}
+            .header-sub {{ text-align: center; font-size: 12px; font-weight: bold; margin: 2px 0; }}
         </style>
-        """
 
-        body = f"""
-        <div class="slip-main">
-            <h2 class="txt-center" style="font-size: 22px; font-weight: 900;">{l_name}</h2>
-            <p class="txt-center" style="font-size: 12px; font-weight: bold;">{l_addr}</p>
-            <p class="txt-center" style="font-size: 12px; font-weight: bold;">{l_phone}</p>
-            
-            <div class="token-style">TOKEN NO: {v[0]}</div>
+        <div class="receipt-container">
+            <h2 class="header-title">{l_name}</h2>
+            <p class="header-sub">{l_addr}</p>
+            <p class="header-sub">{l_phone}</p>
             <hr style="border: 1px solid #000;">
             
             <table style="width: 100%; font-size: 12px;">
                 <tr><td><b>Patient:</b> {v[3]}</td><td align="right"><b>Inv:</b> {v[1]}</td></tr>
-                <tr><td><b>Age/Gen:</b> {v[5]}/{v[6]}</td><td align="right"><b>Date:</b> {v[2]}</td></tr>
-                <tr><td><b>Mobile:</b> {v[4]}</td><td align="right"><b>Lab Box:</b> ____</td></tr>
+                <tr><td><b>Age/Gen:</b> {v[5]} / {v[6]}</td><td align="right"><b>Date:</b> {v[2]}</td></tr>
+                <tr><td><b>Mobile:</b> {v[4]}</td><td align="right"><b>Token:</b> {v[0]}</td></tr>
+                <tr><td colspan="2"><b>Ref By:</b> {v[7] if v[7] else 'SELF'}</td></tr>
             </table>
-
-            <div class="dr-box">
-                <b>Ref By / Doctor:</b> {dr_name}
-            </div>
 
             <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px;">
                 <tr style="border-bottom: 2px solid #000; border-top: 2px solid #000;">
@@ -65,22 +65,32 @@ def show_receipt(v):
                     <th align="center">Qty</th>
                     <th align="right">Amt</th>
                 </tr>
-                {items_html}
+        """
+        
+        # Tests aur Medicines ko format karna
+        raw_details = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ")
+        items_list = raw_details.split(", ")
+        for t in items_list:
+            if t.strip():
+                receipt_html += f"<tr><td>{t}</td><td align='center'>1</td><td align='right'>-</td></tr>"
+
+        receipt_html += f"""
             </table>
 
             <div style="margin-top: 15px; border-top: 2px solid #000; padding-top: 5px; font-weight: bold;">
                 <div style="display: flex; justify-content: space-between;"><span>Total:</span> <span>Rs. {v[9]}</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>Paid:</span> <span>Rs. {v[10]}</span></div>
-                <div style="display: flex; justify-content: space-between; font-size: 16px; background: #eee; padding: 2px; border: 1px solid #000;">
+                <div style="display: flex; justify-content: space-between; font-size: 15px; background: #eee; padding: 2px;">
                     <span>Balance:</span> <span>Rs. {v[11]}</span>
                 </div>
             </div>
             <p style="text-align: center; font-size: 9px; margin-top: 20px;">Developed by Zain - 03702906075</p>
         </div>
         """
-
-        # Render as HTML
-        st.markdown(style + body, unsafe_allow_html=True)
+        st.markdown(receipt_html, unsafe_allow_html=True)
         
+        # Unique Key Fix: Invoice Number use kiya hai taake error na aaye
+        st.button("Print Slip (Ctrl+P)", key=f"print_{v[1]}")
+            
     except Exception as e:
-        st.error(f"Parchi Error: {e}")
+        st.error(f"Receipt Design Error: {e}")
