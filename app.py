@@ -1,3 +1,4 @@
+from pharmacy_module import show_medicine_section # Nayi file connect ho gayi
 import streamlit as st
 import pandas as pd
 import os
@@ -358,33 +359,92 @@ else:
         selected_t = col_t1.selectbox("Select Test", ["--- Select ---"] + test_options)
         default_rate = test_rate_dict.get(selected_t, 0) if selected_t != "--- Select ---" else 0
         entered_rate = col_t2.number_input("Rate (Rs.)", value=float(default_rate), key="rate_input")
-
         if col_t3.button("➕ Add Test"):
             if selected_t != "--- Select ---":
                 st.session_state.temp_tests.append({"Test": selected_t, "Rate": entered_rate})
                 st.rerun()
 
-        if st.session_state.temp_tests:
-            st.markdown("### Selected Tests")
+        # --- MEDICINE SECTION (Hamesha nazar aaye ga) ---
+        show_medicine_section(conn)
+
+        # Bill tab nazar aaye jab Test ya Medicine mein se koi aik bhi add ho
+        has_tests = len(st.session_state.temp_tests) > 0
+        has_meds = 'temp_meds' in st.session_state and len(st.session_state.temp_meds) > 0
+
+        if has_tests or has_meds:
+            st.markdown("### 📋 Final Bill Summary")
+            
+            # Display Selected Tests
             for i, t in enumerate(st.session_state.temp_tests):
                 cols = st.columns([4, 1])
                 cols[0].write(f"{i+1}. ✅ {t['Test']} --- Rs. {t['Rate']}")
-                if cols[1].button("❌", key=f"del_{i}"):
+                if cols[1].button("❌", key=f"del_t_{i}"):
                     st.session_state.temp_tests.pop(i)
                     st.rerun()
+            
+            # Calculate Totals
             total_bill = sum(t['Rate'] for t in st.session_state.temp_tests)
-            paid_amt = st.number_input("Paid Amount", 0, max_value=int(total_bill))
+            if has_meds:
+                total_bill += sum(m['Price'] for m in st.session_state.temp_meds)
+
+            # Payment Inputs
+            paid_amt = st.number_input("Paid Amount", 0, max_value=int(total_bill), key="final_paid_input")
             if st.button("💾 Final Save Record", use_container_width=True):
-                if p_name and st.session_state.temp_tests:
-                    all_tests_str = ", ".join([t['Test'] for t in st.session_state.temp_tests])
+                if p_name:
+                    # 1. Tests aur Meds ko jama karo
+                    all_tests = [t['Test'] for t in st.session_state.temp_tests]
+                    all_meds = [m['Med'] for m in st.session_state.temp_meds] if 'temp_meds' in st.session_state else []
+                    
+                    # 2. Aik hi string mein save karne ke liye (ya alag column hai toh wahan daalein)
+                    full_details = "Tests: " + ", ".join(all_tests)
+                    if all_meds:
+                        full_details += " | Meds: " + ", ".join(all_meds)
+
                     rem = total_bill - paid_amt
                     new_id = len(df) + 1
-                    data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, all_tests_str, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
+                    
+                    # 3. Data list (Check karein aapki sheet ke columns ke mutabiq ho)
+                    data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, full_details, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
+                    
                     save_record_local(pd.DataFrame([data_list], columns=required_cols))
+                    
+                    # 4. Cleanup
                     st.session_state.show_slip = data_list 
                     st.session_state.temp_tests = [] 
-                    st.rerun()
+                    if 'temp_meds' in st.session_state:
+                        st.session_state.temp_meds = []
+                    
+                    st.success("Record Saved!")
+                    st.rerun() 
+            if st.button("💾 Final Save Record", use_container_width=True):
+                if p_name:
+                    # 1. Tests aur Meds ko jama karo
+                    all_tests = [t['Test'] for t in st.session_state.temp_tests]
+                    all_meds = [m['Med'] for m in st.session_state.temp_meds] if 'temp_meds' in st.session_state else []
+                    
+                    # 2. Aik hi string mein save karne ke liye (ya alag column hai toh wahan daalein)
+                    full_details = "Tests: " + ", ".join(all_tests)
+                    if all_meds:
+                        full_details += " | Meds: " + ", ".join(all_meds)
 
+                    rem = total_bill - paid_amt
+                    new_id = len(df) + 1
+                    
+                    # 3. Data list (Check karein aapki sheet ke columns ke mutabiq ho)
+                    data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, full_details, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
+                    
+                    save_record_local(pd.DataFrame([data_list], columns=required_cols))
+                    
+                    # 4. Cleanup
+                    st.session_state.show_slip = data_list 
+                    st.session_state.temp_tests = [] 
+                    if 'temp_meds' in st.session_state:
+                        st.session_state.temp_meds = []
+                    
+                    st.success("Record Saved!")
+                    st.rerun()
+                else:
+                    st.error("Please enter Patient Name first!")
     elif menu == "💰 Dues & Reports":
         st.header("Update Records & Results")
         if not df.empty:
