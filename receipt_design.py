@@ -1,148 +1,99 @@
 import streamlit as st
-import streamlit.components.v1 as components
 
 def show_receipt(v):
+    """
+    v is the list of patient data.
+    v[12] ko hum Token No ke liye use kar sakte hain agar sheet mein hai, 
+    warna yahan manually handle kiya hai.
+    """
     try:
-        # Lab Contact number session state se uthayein (Default agar na mile)
-        lab_phone = st.session_state.get('lab_phone', '03XX-XXXXXXX')
-        
-        # Tests aur unke rates ki setting
-        tests_list = str(v[8]).split(", ")
-        total_bill = float(v[9])
-        
-        # Har test ka average rate (Amt fix)
-        per_test_rate = total_bill / len(tests_list) if len(tests_list) > 0 else 0
-        
-        test_rows = ""
-        for t in tests_list:
-            test_rows += f"""
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px 0; font-size: 14px;">{t}</td>
-                <td align="right" style="padding: 8px 0; font-size: 14px;">Rs. {per_test_rate:.0f}</td>
-            </tr>"""
-
-        # HTML Slip Code
         receipt_html = f"""
-        <html>
-        <head>
-            <style>
-                @media print {{
-                    @page {{ size: auto; margin: 5mm; }}
-                    body {{ 
-                        background: white; 
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }}
-                    .no-print {{ display: none !important; }}
-                    .receipt-container {{ 
-                        border: none !important; 
-                        box-shadow: none !important; 
-                        padding: 10px !important;
-                        width: 100% !important;
-                        /* Sharp Text for Print */
-                        text-rendering: optimizeLegibility !important;
-                        -webkit-font-smoothing: antialiased !important;
-                    }}
-                    /* Force black color for better contrast on paper */
-                    h1, b, td, th, p {{ color: #000000 !important; }}
+        <style>
+            @media print {{
+                @page {{ size: 80mm auto; margin: 0mm; }}
+                body {{ background: white !important; margin: 0 !important; padding: 0 !important; }}
+                header, footer, .sidebar, [data-testid="stSidebar"], [data-testid="stHeader"], .stButton {{ 
+                    display: none !important; 
                 }}
-                
-                body {{ 
-                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                    color: #333;
-                    /* Pixel Smoothing */
-                    -webkit-font-smoothing: antialiased;
-                    -moz-osx-font-smoothing: grayscale;
-                    text-rendering: optimizeLegibility;
-                }}
-                
                 .receipt-container {{
-                    width: 420px;
-                    margin: 0 auto;
-                    padding: 20px;
-                    background: white;
-                    border: 1px solid #eee;
-                    image-rendering: -webkit-optimize-contrast;
+                    width: 300px !important; /* Standard Thermal Size */
+                    border: none !important;
+                    margin: 0 !important;
+                    padding: 5px !important;
+                    visibility: visible !important;
+                    position: absolute;
+                    left: 0;
+                    top: 0;
                 }}
-                
-                .header {{ 
-                    text-align: center; 
-                    border-bottom: 3px solid #000; 
-                    padding-bottom: 10px; 
-                }}
-                
-                .btn-print {{ 
-                    background: #2e7d32; color: white; border: none; padding: 12px 20px; 
-                    border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 20px;
-                    font-size: 16px;
-                }}
-            </style>
-        </head>
-        <body>
-            <button class="btn-print no-print" onclick="window.print()">CLICK HERE TO PRINT SLIP</button>
+                body * {{ visibility: hidden; }}
+                .receipt-container, .receipt-container * {{ visibility: visible !important; }}
+            }}
+            .receipt-container {{
+                width: 320px;
+                border: 1px solid #000;
+                padding: 10px;
+                font-family: 'Courier New', Courier, monospace;
+                margin: 10px auto;
+                background: white;
+                color: black;
+            }}
+            .header-title {{ text-align: center; margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase; }}
+            .header-sub {{ text-align: center; font-size: 11px; font-weight: bold; margin: 2px 0; }}
+            .token-box {{ 
+                text-align: center; 
+                border: 2px solid #000; 
+                margin: 5px 0; 
+                padding: 5px; 
+                font-size: 20px; 
+                font-weight: bold; 
+            }}
+        </style>
+
+        <div class="receipt-container">
+            <h2 class="header-title">JAWAD MEDICAL CENTER</h2>
+            <p class="header-sub">MAJEED COLONY SEC 2, KARACHI</p>
+            <p class="header-sub">0370-2906075</p>
             
-            <div class="receipt-container">
-                <div class="header">
-                    <h1 style="margin: 0; font-size: 26px; font-weight: 800;">THE LIFE CARE</h1>
-                    <p style="margin: 5px 0; font-size: 14px;">MAJEED COLONY SEC 2, KARACHI</p>
-                    <p style="margin: 2px 0; font-size: 15px; font-weight: bold;">Contact: {lab_phone}</p>
-                    <div style="border: 2px solid #000; display: inline-block; padding: 2px 15px; margin-top: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-                        PATIENT RECEIPT
-                    </div>
-                </div>
+            <div class="token-box">TOKEN NO: {v[0]}</div> <hr style="border: 1px solid #000; margin: 5px 0;">
+            
+            <table style="width: 100%; font-size: 11px; line-height: 1.4;">
+                <tr><td><b>Patient:</b> {v[3]}</td><td align="right"><b>Inv:</b> {v[1]}</td></tr>
+                <tr><td><b>Age/Gen:</b> {v[5]} / {v[6]}</td><td align="right"><b>Date:</b> {v[2]}</td></tr>
+                <tr><td colspan="2"><b>Ref By / Doctor:</b> {v[7] if len(v)>7 else 'Self'}</td></tr>
+                <tr><td><b>Mobile:</b> {v[4]}</td><td align="right"><b>Lab Box:</b> _______</td></tr>
+            </table>
 
-                <table style="width: 100%; margin-top: 20px; font-size: 13px; line-height: 1.8;">
-                    <tr>
-                        <td width="55%"><b>Inv #:</b> {v[1]}</td>
-                        <td align="right"><b>Date:</b> {v[2]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Name:</b> {v[3]}</td>
-                        <td align="right"><b>Age/Sex:</b> {v[5]}/{v[6]}</td>
-                    </tr>
-                    <tr>
-                        <td><b>Mobile:</b> {v[4]}</td>
-                        <td align="right"><b>Collected:</b> Lab</td>
-                    </tr>
-                    <tr>
-                        <td colspan="2" style="border-top: 1px solid #f9f9f9; padding-top: 5px;">
-                            <b>Ref By / Doctor:</b> {v[7]}
-                        </td>
-                    </tr>
-                </table>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px;">
+                <tr style="border-bottom: 1px solid #000; border-top: 1px solid #000;">
+                    <th align="left">Description</th>
+                    <th align="right">Amt</th>
+                </tr>
+        """
+        
+        # Tests aur Medicines ki list dikhane ke liye
+        details = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").split(" | ")
+        for item_group in details:
+            items = item_group.split(", ")
+            for item in items:
+                receipt_html += f"<tr><td style='padding: 2px 0;'>{item}</td><td align='right'>-</td></tr>"
 
-                <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid #000; border-top: 2px solid #000;">
-                            <th align="left" style="padding: 8px 0;">Test Description</th>
-                            <th align="right" style="padding: 8px 0;">Rate</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {test_rows}
-                    </tbody>
-                </table>
+        receipt_html += f"""
+            </table>
 
-                <div style="margin-top: 20px; border-top: 2px solid #000; padding-top: 10px;">
-                    <table style="width: 100%; font-size: 15px; font-weight: bold;">
-                        <tr><td>TOTAL BILL:</td><td align="right">Rs. {v[9]}</td></tr>
-                        <tr style="color: #444;"><td>PAID AMOUNT:</td><td align="right">Rs. {v[10]}</td></tr>
-                        <tr style="font-size: 18px; border-top: 1px dashed #000;">
-                            <td style="padding-top: 8px;">BALANCE:</td>
-                            <td align="right" style="padding-top: 8px;">Rs. {v[11]}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <div style="margin-top: 40px; text-align: center; font-size: 11px; border-top: 1px solid #eee; padding-top: 10px;">
-                    <p style="margin: 2px 0;">This is a computer generated report.</p>
-                    <p style="margin: 2px 0; color: #000;"><b>Developed by Zain - 0370-2926075</b></p>
+            <div style="margin-top: 10px; border-top: 1px solid #000; padding-top: 5px; font-size: 13px; font-weight: bold;">
+                <div style="display: flex; justify-content: space-between;"><span>Total Bill:</span> <span>Rs. {v[9]}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>Paid Amount:</span> <span>Rs. {v[10]}</span></div>
+                <div style="display: flex; justify-content: space-between; border: 1px solid #000; padding: 2px; margin-top: 2px;">
+                    <span>Balance:</span> <span>Rs. {v[11]}</span>
                 </div>
             </div>
-        </body>
-        </html>
+            <p style="text-align: center; font-size: 10px; margin-top: 15px; font-weight: bold;">*** Wish You A Speedy Recovery ***</p>
+            <p style="text-align: center; font-size: 8px; margin-top: 5px;">Developed by Zain - 03702906075</p>
+        </div>
         """
-        components.html(receipt_html, height=750, scrolling=True)
-
+        st.markdown(receipt_html, unsafe_allow_html=True)
+        if st.button("Print Receipt", key="print_btn"):
+            st.write("Press **Ctrl + P** to print")
+            
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Receipt Design Error: {e}")
