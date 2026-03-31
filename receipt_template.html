@@ -1,31 +1,97 @@
-<div class="receipt-container">
-    <h2>JAWAD MEDICAL CENTER</h2>
-    <p>MAJEED COLONY SEC 2, KARACHI</p>
-    <p>PH: 0370-2906075</p>
+<html>
+<head>
+    <style>
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            background: #fff; color: #000; margin: 0; padding: 0; 
+        }
+        .receipt-container { 
+            width: 320px; 
+            padding: 10px; margin: 0 auto;
+            border: 1px solid #000;
+        }
+        .header-title { 
+            text-align: center; margin: 0; font-size: 26px; 
+            font-weight: 900; text-transform: uppercase; 
+        }
+        .header-sub { text-align: center; font-size: 13px; font-weight: bold; margin: 2px 0; }
+        
+        /* Token section ab sada hai (No black background) */
+        .token-section {
+            text-align: center;
+            padding: 5px;
+            margin: 5px 0;
+            font-size: 22px;
+            font-weight: 900;
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+        }
+        
+        .info-table { width: 100%; font-size: 13px; font-weight: bold; margin-top: 5px; }
+        .items-table { 
+            width: 100%; border-collapse: collapse; margin-top: 10px; 
+            border-top: 2px solid #000; border-bottom: 2px solid #000; 
+        }
+        .items-table th { padding: 5px 0; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #000; }
+        .items-table td { padding: 4px 0; font-size: 13px; font-weight: bold; }
+        
+        .total-section { margin-top: 10px; font-weight: 900; font-size: 15px; }
+        .balance-box { 
+            border: 2px solid #000; padding: 5px; margin-top: 5px;
+            display: flex; justify-content: space-between; font-size: 17px;
+        }
+        
+        @media print { 
+            .no-print { display: none !important; }
+            body { margin: 0; }
+            .receipt-container { border: none; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header-title">JAWAD MEDICAL CENTER</div>
+        <div class="header-sub">MAJEED COLONY SEC 2, KARACHI</div>
+        <div class="header-sub">PH: 0370-2906075</div>
+        
+        <div class="token-section">
+            TOKEN NO: {{ token }}
+        </div>
+        
+        <table class="info-table">
+            <tr><td>PATIENT: {{ patient }}</td><td align="right">INV: {{ inv }}</td></tr>
+            <tr><td>AGE/GEN: {{ age_gen }}</td><td align="right">DATE: {{ date }}</td></tr>
+            <tr><td>MOBILE: {{ mobile }}</td><td align="right">REF: {{ ref }}</td></tr>
+        </table>
 
-    <div class="token-box">
-        TOKEN NO: {{ token_no }}
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th align="left">DESCRIPTION</th>
+                    <th align="center">QTY</th>
+                    <th align="right">AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ items_rows }}
+            </tbody>
+        </table>
+
+        <div class="total-section">
+            <div style="display:flex; justify-content:space-between"><span>TOTAL AMOUNT:</span><span>RS. {{ total }}</span></div>
+            <div style="display:flex; justify-content:space-between"><span>PAID AMOUNT:</span><span>RS. {{ paid }}</span></div>
+            <div class="balance-box">
+                <span>BALANCE:</span><span>RS. {{ balance }}</span>
+            </div>
+        </div>
+        
+        <p style="text-align:center; font-size:10px; margin-top:20px; font-weight: 900; border-top: 1px dashed #000; padding-top: 5px;">
+            Developed by Imamullah - 03702906075
+        </p>
+        
+        <button class="no-print" onclick="window.print()" style="width:100%; margin-top:15px; padding:12px; font-weight:bold; background:#000; color:#fff; border:none; cursor:pointer; font-size:16px;">
+            PRINT RECEIPT
+        </button>
     </div>
-
-    <div class="info-row">
-        <span>PATIENT: {{ patient_name }}</span>
-        <span>INV: {{ inv_no }}</span>
-    </div>
-    
-    <hr>
-
-    <table style="width: 100%;">
-        <thead>
-            <tr>
-                <th style="text-align: left;">DESCRIPTION</th>
-                <th class="text-center">QTY</th>
-                <th class="text-right">AMOUNT</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{ items_rows }} </tbody>
-    </table>
-
-    <hr>
-    <p style="text-align: center; font-size: 10px;">Developed by Imamullah - 03702906075</p>
-</div>
+</body>
+</html>
