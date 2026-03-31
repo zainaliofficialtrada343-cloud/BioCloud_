@@ -4,7 +4,7 @@ import pandas as pd
 # --- 1. Dawaiyon ki list uthany ka function ---
 def get_medicine_list(conn):
     try:
-        df = conn.read(worksheet="medicine_db", ttl="0")
+        df = conn.read(worksheet="meds_db", ttl="0")
         if not df.empty:
             df['Price'] = pd.to_numeric(df['Price'], errors='coerce').fillna(0)
         return df
