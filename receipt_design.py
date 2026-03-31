@@ -4,38 +4,36 @@ import os
 
 def show_receipt(v):
     try:
-        # Check if template exists
         if not os.path.exists('receipt_template.html'):
-            st.error("Template file nahi mili! Please 'receipt_template.html' banayein.")
+            st.error("receipt_template.html file missing!")
             return
 
         with open('receipt_template.html', 'r') as f:
             html_template = f.read()
 
-        # Items handle karein
-        raw_data = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ")
-        items_list = raw_data.split(", ")
+        # Items Formatting
+        raw_items = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ")
+        items_list = raw_items.split(", ")
         items_html = ""
         for item in items_list:
             if item.strip():
-                items_html += f"<tr><td>{item.strip()}</td><td align='center'>1</td><td align='right'>-</td></tr>"
+                items_html += f"<tr><td>{item.strip().upper()}</td><td align='right'>-</td></tr>"
 
-        # Data Replace Logic
+        # Data Injection
         final_html = html_template.replace("{{ token }}", str(v[0])) \
-                                   .replace("{{ patient }}", str(v[3])) \
+                                   .replace("{{ patient }}", str(v[3]).upper()) \
                                    .replace("{{ inv }}", str(v[1])) \
-                                   .replace("{{ age_gen }}", f"{v[5]} / {v[6]}") \
+                                   .replace("{{ age_gen }}", f"{v[5]} / {v[6]}".upper()) \
                                    .replace("{{ date }}", str(v[2])) \
                                    .replace("{{ mobile }}", str(v[4])) \
-                                   .replace("{{ ref }}", str(v[7]) if v[7] else "SELF") \
+                                   .replace("{{ ref }}", str(v[7]).upper() if v[7] else "SELF") \
                                    .replace("{{ items_rows }}", items_html) \
                                    .replace("{{ total }}", str(v[9])) \
                                    .replace("{{ paid }}", str(v[10])) \
                                    .replace("{{ balance }}", str(v[11]))
 
-        # Render the receipt
-        # Height 650px rakhi hai taake slip poori nazar aaye
-        components.html(final_html, height=650, scrolling=True)
+        # Display (Height adjust ki hai taake faltu space na aaye)
+        components.html(final_html, height=700, scrolling=True)
 
     except Exception as e:
         st.error(f"Design Error: {e}")
