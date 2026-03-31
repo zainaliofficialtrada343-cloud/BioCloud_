@@ -340,7 +340,7 @@ else:
                     save_test_local(pd.DataFrame([{"Test_Name": new_t_name, "Rate": new_t_rate}]))
                     st.success("Test Saved to Cloud!")
                     st.rerun()
-
+                 
         with st.expander("Patient Information", expanded=True):
             r1c1, r1c2, r1c3 = st.columns([2, 1, 1])
             p_name = r1c1.text_input("Patient Name")
@@ -363,6 +363,30 @@ else:
             if selected_t != "--- Select ---":
                 st.session_state.temp_tests.append({"Test": selected_t, "Rate": entered_rate})
                 st.rerun()
+                
+# --- NEW MEDICINE MASTER SECTION ---
+        with st.expander("💊 Add New Medicine Type"):
+            c_m1, c_m2, c_m3 = st.columns([2, 1, 1])
+            new_m_name = c_m1.text_input("Medicine Name", key="new_med_name")
+            new_m_rate = c_m2.number_input("Medicine Price", 0, key="new_med_price")
+            
+            if c_m3.button("Save New Medicine"):
+                if new_m_name:
+                    # Nayi medicine ko DataFrame mein convert karein
+                    new_med_df = pd.DataFrame([{"Medicine_Name": new_m_name, "Price": new_m_rate}])
+                    
+                    # Google Sheets mein 'meds_db' ke naam se save karein
+                    try:
+                        existing_meds = conn.read(worksheet="meds_db", ttl="0")
+                        updated_meds = pd.concat([existing_meds, new_med_df], ignore_index=True)
+                        conn.update(worksheet="meds_db", data=updated_meds)
+                        st.success(f"{new_m_name} Save Ho Gayi!")
+                        st.rerun()
+                    except Exception as e:
+                        # Agar sheet nahi bani hui to pehli baar banane ke liye
+                        conn.update(worksheet="meds_db", data=new_med_df)
+                        st.success("Meds Database Created & Saved!")
+                        st.rerun()
 
         # --- MEDICINE SECTION (Hamesha nazar aaye ga) ---
         show_medicine_section(conn)
