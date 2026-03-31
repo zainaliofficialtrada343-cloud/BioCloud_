@@ -217,7 +217,7 @@ def save_expense_gsheet(new_ex_df):
     conn.update(worksheet="expenses_db", data=updated_ex)
 
 # --- 3. PAGE CONFIG ---
-st.set_page_config(page_title="abdullah pro", layout="wide", page_icon="🧪")
+st.set_page_config(page_title="ABDULLAH", layout="wide", page_icon="🧪")
 
 # --- 4. STYLE & DESIGN (CSS) ---
 st.markdown("""
@@ -276,7 +276,7 @@ else:
     required_cols = ["ID", "Invoice", "Date", "Name", "Mobile", "Age", "Gender", "Collected", "Test", "Total_Bill", "Paid_Amount", "Remaining", "Result", "Unit", "Status"]
 
     with st.sidebar:
-        st.markdown("<h1 style='text-align: center;'>🧪 BioCloud Pro</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center;'>🧪 ABDULLAH </h1>", unsafe_allow_html=True)
         st.divider()
         menu = st.radio("Navigation", ["🏠 Home", "📝 Registration", "💰 Dues & Reports", "🧪 Test Master", "💸 Expense Manager", "🔍 History Search", "📊 Excel History", "⚙️ Lab Settings"])
         st.divider()
