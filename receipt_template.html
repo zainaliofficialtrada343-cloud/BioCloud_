@@ -1,0 +1,26 @@
+<div class="receipt-container">
+    <h2 class="header-title">{{LAB_NAME}}</h2>
+    <p class="header-sub">MAJEED COLONY SEC 2, KARACHI</p>
+    <p class="header-sub">0370-2906075</p>
+    
+    <div class="token-box">TOKEN NO: {{TOKEN}}</div>
+    
+    <table class="info-table">
+        <tr><td><b>Patient:</b> {{PATIENT}}</td><td align="right"><b>Inv:</b> {{INV}}</td></tr>
+        <tr><td><b>Age/Gen:</b> {{AGE_GEN}}</td><td align="right"><b>Date:</b> {{DATE}}</td></tr>
+    </table>
+
+    <table class="items-table">
+        <tr><th align="left">Description</th><th align="right">Amt</th></tr>
+        {{ITEMS_ROWS}}
+    </table>
+
+    <div class="total-section">
+        <div style="display:flex; justify-content:space-between"><span>Total:</span><span>Rs. {{TOTAL}}</span></div>
+        <div style="display:flex; justify-content:space-between"><span>Paid:</span><span>Rs. {{PAID}}</span></div>
+        <div style="display:flex; justify-content:space-between; background:#eee; padding:2px; border:1px solid #000;">
+            <span>Balance:</span><span>Rs. {{BALANCE}}</span>
+        </div>
+    </div>
+    <p style="text-align:center; font-size:9px; margin-top:15px;">Developed by Zain - 03702906075</p>
+</div>
