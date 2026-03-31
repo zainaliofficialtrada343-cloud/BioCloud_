@@ -1,40 +1,53 @@
 import streamlit as st
 
 def show_receipt(v):
+    """
+    v is the list of patient data.
+    """
     try:
-        # 1. Lab Details (Jo aapne maangi hain)
-        l_name = st.session_state.get('lab_name', 'THE LIFE CARE CLINIC & LAB')
-        l_addr = st.session_state.get('lab_addr', 'MAJEED COLONY SEC 2, KARACHI')
-        l_phone = st.session_state.get('lab_phone', '0370-2926075')
-
-        # 2. CSS Part (Alag rakha hai taake error na aaye)
-        style = """
+        # Aapka original design f-string ke saath
+        receipt_html = f"""
         <style>
-            .slip-body {
-                width: 350px; border: 2px solid #000; padding: 15px;
+            @media print {{
+                @page {{ size: auto; margin: 0mm; }}
+                body {{ background: white !important; margin: 0 !important; padding: 0 !important; }}
+                header, footer, .sidebar, [data-testid="stSidebar"], [data-testid="stHeader"], .stButton {{
+                    display: none !important;
+                }}
+                .receipt-container {{
+                    width: 350px !important;
+                    border: none !important;
+                    margin: 0 !important;
+                    padding: 10px !important;
+                    visibility: visible !important;
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                }}
+                body * {{ visibility: hidden; }}
+                .receipt-container, .receipt-container * {{ visibility: visible !important; }}
+            }}
+            .receipt-container {{
+                width: 350px;
+                border: 2px solid #000;
+                padding: 15px;
                 font-family: 'Courier New', Courier, monospace;
-                background: white; color: black; margin: auto;
-            }
-            .header { text-align: center; margin: 0; }
-            .token { 
-                text-align: center; border: 1px solid #000; 
-                margin: 10px 0; padding: 5px; font-size: 18px; font-weight: bold; 
-            }
-            @media print {
-                .stButton, header, footer, .sidebar { display: none !important; }
-                body { background: white; }
-            }
+                margin: 20px auto;
+                background: white;
+                color: black;
+            }}
+            .header-title {{ text-align: center; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; }}
+            .header-sub {{ text-align: center; font-size: 12px; font-weight: bold; margin: 2px 0; }}
+            .token-box {{ text-align: center; border: 1px solid #000; margin: 10px 0; padding: 5px; font-size: 18px; font-weight: bold; }}
         </style>
-        """
 
-        # 3. HTML Content
-        content = f"""
-        <div class="slip-body">
-            <h2 class="header" style="font-size: 22px;">{l_name}</h2>
-            <p class="header" style="font-size: 12px; font-weight: bold;">{l_addr}</p>
-            <p class="header" style="font-size: 12px; font-weight: bold;">{l_phone}</p>
+        <div class="receipt-container">
+            <h2 class="header-title">JAWAD MEDICAL CENTER</h2>
+            <p class="header-sub">MAJEED COLONY SEC 2, KARACHI</p>
+            <p class="header-sub">0370-2906075</p>
             
-            <div class="token">TOKEN NO: {v[0]}</div>
+            <div class="token-box">TOKEN NO: {v[0]}</div>
+            
             <hr style="border: 1px solid #000;">
             
             <table style="width: 100%; font-size: 12px;">
@@ -50,30 +63,32 @@ def show_receipt(v):
                     <th align="right">Amt</th>
                 </tr>
         """
+        
+        # Tests list handling
+        tests_list = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ").split(", ")
+        for t in tests_list:
+            if t.strip():
+                receipt_html += f"<tr><td>{t}</td><td align='center'>1</td><td align='right'>-</td></tr>"
 
-        # Tests handling
-        raw_items = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ")
-        for item in raw_items.split(", "):
-            if item.strip():
-                content += f"<tr><td>{item}</td><td align='center'>1</td><td align='right'>-</td></tr>"
-
-        content += f"""
+        receipt_html += f"""
             </table>
 
             <div style="margin-top: 15px; border-top: 2px solid #000; padding-top: 5px; font-weight: bold;">
                 <div style="display: flex; justify-content: space-between;"><span>Total:</span> <span>Rs. {v[9]}</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>Paid:</span> <span>Rs. {v[10]}</span></div>
-                <div style="display: flex; justify-content: space-between; font-size: 15px; background: #eee; border:1px solid #000; padding: 2px;">
+                <div style="display: flex; justify-content: space-between; font-size: 15px; background: #eee; padding: 2px; border: 1px solid #000;">
                     <span>Balance:</span> <span>Rs. {v[11]}</span>
                 </div>
             </div>
             <p style="text-align: center; font-size: 9px; margin-top: 20px;">Developed by Zain - 03702906075</p>
         </div>
         """
-
-        # Final Display
-        st.markdown(style + content, unsafe_allow_html=True)
-        st.button("Direct Print (Ctrl+P)", key=f"p_btn_{v[1]}")
-
+        
+        # Rendering
+        st.markdown(receipt_html, unsafe_allow_html=True)
+        
+        # Button with Unique Key to avoid Error
+        st.button("Print Slip (Ctrl+P)", key=f"print_{v[1]}")
+            
     except Exception as e:
-        st.error(f"Design Error: {e}")
+        st.error(f"Receipt Design Error: {e}")
