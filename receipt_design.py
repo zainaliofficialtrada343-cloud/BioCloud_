@@ -2,52 +2,46 @@ import streamlit as st
 
 def show_receipt(v):
     """
-    v is the list of patient data.
+    v[0]: Token, v[1]: Inv, v[2]: Date, v[3]: Name, v[4]: Mobile, 
+    v[5]: Age, v[6]: Gen, v[7]: Ref/Doctor, v[8]: Details...
     """
     try:
-        # Aapka original design f-string ke saath
-        receipt_html = f"""
+        # 1. CSS ko alag rakha taake code screen par na aaye
+        css_style = """
         <style>
-            @media print {{
-                @page {{ size: auto; margin: 0mm; }}
-                body {{ background: white !important; margin: 0 !important; padding: 0 !important; }}
-                header, footer, .sidebar, [data-testid="stSidebar"], [data-testid="stHeader"], .stButton {{
+            @media print {
+                @page { size: auto; margin: 0mm; }
+                body { background: white !important; margin: 0 !important; padding: 0 !important; }
+                header, footer, .sidebar, [data-testid="stSidebar"], [data-testid="stHeader"], .stButton {
                     display: none !important;
-                }}
-                .receipt-container {{
-                    width: 350px !important;
-                    border: none !important;
-                    margin: 0 !important;
-                    padding: 10px !important;
-                    visibility: visible !important;
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                }}
-                body * {{ visibility: hidden; }}
-                .receipt-container, .receipt-container * {{ visibility: visible !important; }}
-            }}
-            .receipt-container {{
-                width: 350px;
-                border: 2px solid #000;
-                padding: 15px;
+                }
+                .receipt-container {
+                    width: 350px !important; border: none !important; margin: 0 !important;
+                    padding: 10px !important; visibility: visible !important;
+                    position: absolute; left: 0; top: 0;
+                }
+                body * { visibility: hidden; }
+                .receipt-container, .receipt-container * { visibility: visible !important; }
+            }
+            .receipt-container {
+                width: 350px; border: 2px solid #000; padding: 15px;
                 font-family: 'Courier New', Courier, monospace;
-                margin: 20px auto;
-                background: white;
-                color: black;
-            }}
-            .header-title {{ text-align: center; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; }}
-            .header-sub {{ text-align: center; font-size: 12px; font-weight: bold; margin: 2px 0; }}
-            .token-box {{ text-align: center; border: 1px solid #000; margin: 10px 0; padding: 5px; font-size: 18px; font-weight: bold; }}
+                margin: 20px auto; background: white; color: black;
+            }
+            .header-title { text-align: center; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; }
+            .header-sub { text-align: center; font-size: 12px; font-weight: bold; margin: 2px 0; }
+            .token-style { text-align: center; border: 1px solid #000; margin: 10px 0; padding: 5px; font-size: 18px; font-weight: bold; }
         </style>
+        """
 
+        # 2. Receipt ka Header aur Patient Info
+        html_top = f"""
         <div class="receipt-container">
             <h2 class="header-title">JAWAD MEDICAL CENTER</h2>
             <p class="header-sub">MAJEED COLONY SEC 2, KARACHI</p>
             <p class="header-sub">0370-2906075</p>
             
-            <div class="token-box">TOKEN NO: {v[0]}</div>
-            
+            <div class="token-style">TOKEN NO: {v[0]}</div>
             <hr style="border: 1px solid #000;">
             
             <table style="width: 100%; font-size: 12px;">
@@ -63,14 +57,16 @@ def show_receipt(v):
                     <th align="right">Amt</th>
                 </tr>
         """
-        
-        # Tests list handling
+
+        # 3. Tests ki list
+        html_middle = ""
         tests_list = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ").split(", ")
         for t in tests_list:
             if t.strip():
-                receipt_html += f"<tr><td>{t}</td><td align='center'>1</td><td align='right'>-</td></tr>"
+                html_middle += f"<tr><td>{t}</td><td align='center'>1</td><td align='right'>-</td></tr>"
 
-        receipt_html += f"""
+        # 4. Total aur Footer
+        html_bottom = f"""
             </table>
 
             <div style="margin-top: 15px; border-top: 2px solid #000; padding-top: 5px; font-weight: bold;">
@@ -83,12 +79,12 @@ def show_receipt(v):
             <p style="text-align: center; font-size: 9px; margin-top: 20px;">Developed by Zain - 03702906075</p>
         </div>
         """
+
+        # Sab ko mila kar display karna
+        st.markdown(css_style + html_top + html_middle + html_bottom, unsafe_allow_html=True)
         
-        # Rendering
-        st.markdown(receipt_html, unsafe_allow_html=True)
-        
-        # Button with Unique Key to avoid Error
-        st.button("Print Slip (Ctrl+P)", key=f"print_{v[1]}")
-            
+        # Unique Button Key taake error na aaye
+        st.button("Direct Print (Ctrl+P)", key=f"btn_{v[1]}")
+
     except Exception as e:
         st.error(f"Receipt Design Error: {e}")
