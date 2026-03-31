@@ -2,8 +2,9 @@ import streamlit as st
 
 def show_receipt(v):
     try:
-        # 1. CSS ko simple string mein rakha (f-string use nahi ki taake brackets ka masla na ho)
-        css_code = """
+        # 1. CSS ko bilkul alag rakha (Isme koi variable nahi hai, is liye f-string nahi hai)
+        # Is se brackets ka masla khatam ho jayega
+        css_style = """
         <style>
             @media print {
                 @page { size: auto; margin: 0mm; }
@@ -30,13 +31,10 @@ def show_receipt(v):
         </style>
         """
 
-        # 2. Variable set karein (JAWAD MEDICAL CENTER fix kar diya)
-        lab_name = "JAWAD MEDICAL CENTER"
-        
-        # 3. HTML structure (Sirf is hisse mein f-string use ki hai)
+        # 2. HTML Body (Isme hum f-string use karenge variables ke liye)
         html_body = f"""
         <div class="receipt-container">
-            <h2 class="header-title">{lab_name}</h2>
+            <h2 class="header-title">JAWAD MEDICAL CENTER</h2>
             <p class="header-sub">MAJEED COLONY SEC 2, KARACHI</p>
             <p class="header-sub">0370-2906075</p>
             
@@ -57,13 +55,14 @@ def show_receipt(v):
                 </tr>
         """
 
-        # Tests loop
+        # Tests/Items loop
         tests_list = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ").split(", ")
         for t in tests_list:
             if t.strip():
                 html_body += f"<tr><td>{t}</td><td align='center'>1</td><td align='right'>-</td></tr>"
 
-        html_body += f"""
+        # 3. Closing HTML
+        html_footer = f"""
             </table>
 
             <div style="margin-top: 15px; border-top: 2px solid #000; padding-top: 5px; font-weight: bold;">
@@ -77,11 +76,11 @@ def show_receipt(v):
         </div>
         """
 
-        # 4. Final Output (CSS aur Body ko jod kar)
-        st.markdown(css_code + html_body, unsafe_allow_html=True)
+        # Final step: Sab ko mila kar display karain
+        st.markdown(css_style + html_body + html_footer, unsafe_allow_html=True)
         
-        # 5. Print Button
-        st.button("Print Slip (Ctrl+P)", key=f"print_{v[1]}")
+        # Unique key taake error na aaye
+        st.button("Print Slip (Ctrl+P)", key=f"print_btn_{v[1]}")
 
     except Exception as e:
         st.error(f"Receipt Design Error: {e}")
