@@ -416,8 +416,104 @@ else:
                     
                     st.success("Record Saved!")
                     st.rerun() 
-    
+            if st.button("💾 Final Save Record", use_container_width=True):
+                if p_name:
+                    # 1. Tests aur Meds ko jama karo
+                    all_tests = [t['Test'] for t in st.session_state.temp_tests]
+                    all_meds = [m['Med'] for m in st.session_state.temp_meds] if 'temp_meds' in st.session_state else []
+                    
+                    # 2. Aik hi string mein save karne ke liye (ya alag column hai toh wahan daalein)
+                    full_details = "Tests: " + ", ".join(all_tests)
+                    if all_meds:
+                        full_details += " | Meds: " + ", ".join(all_meds)
+
+                    rem = total_bill - paid_amt
+                    new_id = len(df) + 1
+                    
+                    # 3. Data list (Check karein aapki sheet ke columns ke mutabiq ho)
+                    data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, full_details, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
+                    
+                    save_record_local(pd.DataFrame([data_list], columns=required_cols))
+                    
+                    # 4. Cleanup
+                    st.session_state.show_slip = data_list 
+                    st.session_state.temp_tests = [] 
+                    if 'temp_meds' in st.session_state:
+                        st.session_state.temp_meds = []
+                    
+                    st.success("Record Saved!")
+                    st.rerun()
                 else:
+                    # --- MEDICINE SECTION ---
+                  show_medicine_section(conn)
+        # 1. Check karein ke Test ya Medicine mein se kuch add hua hai?
+        has_tests = len(st.session_state.temp_tests) > 0
+        has_meds = 'temp_meds' in st.session_state and len(st.session_state.temp_meds) > 0
+
+        if has_tests or has_meds:
+            st.markdown("### 📋 Final Bill Summary")
+            
+            # --- DISPLAY LIST ---
+            # Pehle Tests dikhao
+            for i, t in enumerate(st.session_state.temp_tests):
+                cols = st.columns([4, 1])
+                cols[0].write(f"🔬 {t['Test']} --- Rs. {t['Rate']}")
+                if cols[1].button("❌", key=f"del_t_{i}"):
+                    st.session_state.temp_tests.pop(i)
+                    st.rerun()
+            
+            # Phir Medicines dikhao
+            if has_meds:
+                for i, m in enumerate(st.session_state.temp_meds):
+                    cols = st.columns([4, 1])
+                    cols[0].write(f"💊 {m['Med']} --- Rs. {m['Price']}")
+                    if cols[1].button("❌", key=f"del_m_{i}"):
+                        st.session_state.temp_meds.pop(i)
+                        st.rerun()
+
+            # --- CALCULATE TOTAL ---
+            total_bill = sum(t['Rate'] for t in st.session_state.temp_tests)
+            if has_meds:
+                total_bill += sum(m['Price'] for m in st.session_state.temp_meds)
+
+            st.write(f"**Total Payable: Rs. {total_bill}**")
+            
+            # Payment Inputs
+            paid_amt = st.number_input("Paid Amount", 0, max_value=int(total_bill), key="final_paid_input")
+            
+            if st.button("💾 Final Save Record", use_container_width=True):
+                if p_name:
+                    # 2. String taiyar karein (v[8] ke liye)
+                    items_parts = []
+                    if has_tests:
+                        t_names = ", ".join([t['Test'] for t in st.session_state.temp_tests])
+                        items_parts.append(f"Tests: {t_names}")
+                    
+                    if has_meds:
+                        m_names = ", ".join([m['Med'] for m in st.session_state.temp_meds])
+                        items_parts.append(f"Meds: {m_names}")
+                    
+                    full_details = " | ".join(items_parts) # Ye Receipt mein "Tests: ... | Meds: ..." dikhaye ga
+
+                    rem = total_bill - paid_amt
+                    new_id = len(df) + 1
+                    
+                    # Row taiyar karein (Aapki Google Sheet ke columns ke mutabiq)
+                    data_list = [new_id, p_inv, today, p_name, p_mobile, p_age, p_gender, p_coll, full_details, total_bill, paid_amt, rem, "-", "-", ("Paid" if rem<=0 else "Pending")]
+                    
+                    # 3. Save to Cloud
+                    save_record_local(pd.DataFrame([data_list], columns=required_cols))
+                    
+                    # 4. Cleanup
+                    st.session_state.show_slip = data_list 
+                    st.session_state.temp_tests = [] 
+                    if 'temp_meds' in st.session_state:
+                        st.session_state.temp_meds = []
+                    
+                    st.success("Record & Medicines Saved!")
+                    st.rerun() 
+                else:
+                    st.error("Patient ka naam likhna zaroori hai!")
                     st.error("Please enter Patient Name first!")
     elif menu == "💰 Dues & Reports":
         st.header("Update Records & Results")
