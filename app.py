@@ -217,7 +217,7 @@ def save_expense_gsheet(new_ex_df):
     conn.update(worksheet="expenses_db", data=updated_ex)
 
 # --- 3. PAGE CONFIG ---
-st.set_page_config(page_title="BioCloud Lab Pro", layout="wide", page_icon="🧪")
+st.set_page_config(page_title="abdullah pro", layout="wide", page_icon="🧪")
 
 # --- 4. STYLE & DESIGN (CSS) ---
 st.markdown("""
