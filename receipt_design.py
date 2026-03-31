@@ -11,12 +11,10 @@ def show_receipt(v):
         with open('receipt_template.html', 'r') as f:
             html_template = f.read()
 
-        # Items Formatting Logic
         raw_items = str(v[8]).replace("Tests: ", "").replace("Meds: ", "").replace(" | ", ", ")
         items_list = raw_items.split(", ")
         
         items_html = ""
-        # Agar multiple items hain to total ko filhal divide kar rahe hain ya seedha show kar rahe hain
         for item in items_list:
             if item.strip():
                 items_html += f"""
@@ -27,7 +25,6 @@ def show_receipt(v):
                 </tr>
                 """
 
-        # Final Data Replacement
         final_html = html_template.replace("{{ token }}", str(v[0])) \
                                    .replace("{{ patient }}", str(v[3]).upper()) \
                                    .replace("{{ inv }}", str(v[1])) \
@@ -40,8 +37,8 @@ def show_receipt(v):
                                    .replace("{{ paid }}", str(v[10])) \
                                    .replace("{{ balance }}", str(v[11]))
 
-        # Display Receipt
-        components.html(final_html, height=600, scrolling=True)
+        # Height thodi kam ki hai taake faltu page na nikalay printer se
+        components.html(final_html, height=550, scrolling=False)
 
     except Exception as e:
         st.error(f"Design Error: {e}")

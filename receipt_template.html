@@ -6,38 +6,42 @@
             background: #fff; color: #000; margin: 0; padding: 0; 
         }
         .receipt-container { 
-            width: 300px; /* Standard Thermal Size */
-            padding: 5px; margin: 0 auto;
+            width: 280px; /* 80mm thermal printer ke liye best size */
+            padding: 10px; 
+            margin: 0 auto;
+            box-sizing: border-box; /* Taake padding ki wajah se width na barhay */
         }
-        .header-title { text-align: center; margin: 0; font-size: 22px; font-weight: 900; text-transform: uppercase; }
-        .header-sub { text-align: center; font-size: 12px; font-weight: bold; margin: 1px 0; }
+        .header-title { text-align: center; margin: 0; font-size: 20px; font-weight: 900; text-transform: uppercase; }
+        .header-sub { text-align: center; font-size: 11px; font-weight: bold; margin: 1px 0; }
         
         .token-section {
-            text-align: center; padding: 8px 0; margin: 5px 0;
-            font-size: 20px; font-weight: 900;
+            text-align: center; padding: 5px 0; margin: 5px 0;
+            font-size: 18px; font-weight: 900;
             border-top: 1px dashed #000; border-bottom: 1px dashed #000;
         }
         
-        .info-table { width: 100%; font-size: 12px; font-weight: bold; margin-top: 5px; }
+        .info-table { width: 100%; font-size: 11px; font-weight: bold; margin-top: 5px; }
         
+        /* Table fix taake right side se alfaz na chhupein */
         .items-table { 
             width: 100%; border-collapse: collapse; margin-top: 10px; 
             border-top: 2px solid #000; border-bottom: 2px solid #000;
-            table-layout: fixed; /* Taake ilfaz na kattein */
+            table-layout: fixed; 
         }
-        .items-table th { padding: 5px 0; font-size: 13px; text-transform: uppercase; border-bottom: 1px solid #000; }
-        .items-table td { padding: 4px 0; font-size: 12px; font-weight: bold; word-wrap: break-word; }
+        .items-table th { padding: 5px 2px; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #000; }
+        .items-table td { padding: 4px 2px; font-size: 11px; font-weight: bold; word-wrap: break-word; }
         
-        .total-section { margin-top: 8px; font-weight: 900; font-size: 14px; }
+        .total-section { margin-top: 8px; font-weight: 900; font-size: 13px; }
         .balance-box { 
             border: 1.5px solid #000; padding: 4px; margin-top: 4px;
-            display: flex; justify-content: space-between; font-size: 16px;
+            display: flex; justify-content: space-between; font-size: 15px;
         }
         
+        /* Print settings */
         @media print { 
             .no-print { display: none !important; }
             body { margin: 0; }
-            .receipt-container { width: 100%; }
+            .receipt-container { width: 100%; padding: 5px; }
         }
     </style>
 </head>
@@ -50,7 +54,7 @@
         <div class="token-section">TOKEN NO: {{ token }}</div>
         
         <table class="info-table">
-            <tr><td>PATIENT: {{ patient }}</td><td align="right">INV: {{ inv }}</td></tr>
+            <tr><td style="padding-right:5px;">PATIENT: {{ patient }}</td><td align="right">INV: {{ inv }}</td></tr>
             <tr><td>AGE/GEN: {{ age_gen }}</td><td align="right">DATE: {{ date }}</td></tr>
             <tr><td>MOBILE: {{ mobile }}</td><td align="right">REF: {{ ref }}</td></tr>
         </table>
@@ -58,9 +62,9 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th align="left" style="width: 50%;">DESCRIPTION</th>
+                    <th align="left" style="width: 45%;">DESCRIPTION</th>
                     <th align="center" style="width: 15%;">QTY</th>
-                    <th align="right" style="width: 35%;">AMOUNT</th>
+                    <th align="right" style="width: 40%;">AMOUNT</th>
                 </tr>
             </thead>
             <tbody>
@@ -69,14 +73,18 @@
         </table>
 
         <div class="total-section">
-            <div style="display:flex; justify-content:space-between"><span>TOTAL AMOUNT:</span><span>RS. {{ total }}</span></div>
-            <div style="display:flex; justify-content:space-between"><span>PAID AMOUNT:</span><span>RS. {{ paid }}</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                <span>TOTAL AMOUNT:</span><span>RS. {{ total }}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                <span>PAID AMOUNT:</span><span>RS. {{ paid }}</span>
+            </div>
             <div class="balance-box">
                 <span>BALANCE:</span><span>RS. {{ balance }}</span>
             </div>
         </div>
         
-        <p style="text-align:center; font-size:10px; margin-top:15px; font-weight: 900; border-top: 1px dashed #000; padding-top: 5px;">
+        <p style="text-align:center; font-size:9px; margin-top:15px; font-weight: 900; border-top: 1px dashed #000; padding-top: 5px;">
             Developed by Imamullah - 03702906075
         </p>
         
