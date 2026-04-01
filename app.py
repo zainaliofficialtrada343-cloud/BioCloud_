@@ -129,7 +129,7 @@ def generate_professional_report(p_data, results_list):
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- NEW: FUNCTION TO DOWNLOAD RECEIPT (FIXED ERRORS) ---
+# --- NEW: FUNCTION TO DOWNLOAD RECEIPT (NO CHANGES) ---
 def download_pdf_receipt(v, lab_phone):
     pdf = FPDF(format=(80, 150))
     pdf.add_page()
@@ -143,65 +143,36 @@ def download_pdf_receipt(v, lab_phone):
     pdf.cell(0, 6, "PATIENT RECEIPT", border=1, ln=True, align='C')
     pdf.ln(4)
     pdf.set_font("Arial", '', 8)
-
-    # --- YE HAI FIX: Har value ko check karna ---
-    def safe_get(index, default="N/A"):
-        try:
-            val = v[index]
-            return str(val) if val is not None else default
-        except:
-            return default
-
-    invoice_no = "Inv #: " + safe_get(1)
-    date_str = "Date: " + safe_get(2)
-    patient_name = "Name: " + safe_get(3)
-    age_sex = "Age/Sex: " + safe_get(5) + "/" + safe_get(6)
-    ref_by = "Ref By: " + safe_get(7)
-
-    # PDF Printing
-    pdf.cell(30, 5, invoice_no)
-    pdf.cell(0, 5, date_str, align='R', ln=True)
-    pdf.cell(30, 5, patient_name)
-    pdf.cell(0, 5, age_sex, align='R', ln=True)
+    pdf.cell(30, 5, f"Inv #: {v[1]}")
+    pdf.cell(0, 5, f"Date: {v[2]}", align='R', ln=True)
+    pdf.cell(30, 5, f"Name: {v[3]}")
+    pdf.cell(0, 5, f"Age/Sex: {v[5]}/{v[6]}", align='R', ln=True)
     pdf.ln(2)
-    pdf.cell(0, 5, ref_by, ln=True)
+    pdf.cell(0, 5, f"Ref By: {v[7]}", ln=True)
     pdf.ln(2)
-    
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
     pdf.set_font("Arial", 'B', 8)
     pdf.cell(40, 6, "Test Description")
     pdf.cell(20, 6, "Rate", align='R', ln=True)
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
-
-    # Tests List processing
-    tests_val = safe_get(8, "")
-    tests_list = tests_val.split(", ") if tests_val else ["No Tests"]
-    
-    try:
-        total_bill = float(v[9]) if v[9] else 0
-    except:
-        total_bill = 0
-        
+    tests_list = str(v[8]).split(", ")
+    total_bill = float(v[9])
     per_test_rate = total_bill / len(tests_list) if len(tests_list) > 0 else 0
-    
     pdf.set_font("Arial", '', 8)
     for t in tests_list:
         pdf.cell(40, 6, t)
         pdf.cell(20, 6, f"{per_test_rate:.0f}", align='R', ln=True)
-        
     pdf.ln(2)
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
     pdf.set_font("Arial", 'B', 9)
     pdf.cell(40, 7, "TOTAL BILL:")
-    pdf.cell(20, 7, f"Rs. {safe_get(9, '0')}", align='R', ln=True)
+    pdf.cell(20, 7, f"Rs. {v[9]}", align='R', ln=True)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(40, 7, "BALANCE:")
-    pdf.cell(20, 7, f"Rs. {safe_get(11, '0')}", align='R', ln=True)
-    
+    pdf.cell(20, 7, f"Rs. {v[11]}", align='R', ln=True)
     pdf.ln(5)
     pdf.set_font("Arial", 'B', 7)
     pdf.cell(0, 4, "Developed by Zain - 0370-2926075", ln=True, align='C')
-    
     return pdf.output(dest='S').encode('latin-1')
 
 def get_full_data():
@@ -320,93 +291,28 @@ else:
             st.rerun()
 
     if menu == "🏠 Home":
-        # Professional Header
-        st.markdown(f"""
-            <div style="background-color:#004d4d;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px">
-                <h1 style="color:white;margin:0;">📊 {st.session_state.lab_name} Dashboard</h1>
-                <p style="color:#e0e0e0;margin:5px;">Today's Date: {pd.to_datetime(today_dt).strftime('%d %B, %Y')}</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-        # --- CALENDAR FILTER SECTION ---
-        st.write("### 📅 Custom Date Filter")
-        col_f1, col_f2 = st.columns(2)
-        
-        # Error Fix: today_dt ko pehle sahi format mein convert kiya
-        base_date = pd.to_datetime(today_dt).date()
-        
-        with col_f1:
-            start_date = st.date_input("Start Date", base_date)
-        with col_f2:
-            end_date = st.date_input("End Date", base_date)
-
-        if not df.empty:
-            # Date conversion for filtering
-            df['Date_Converted'] = pd.to_datetime(df['Date'], errors='coerce').dt.date
-            
-            # Filter data
-            mask = (df['Date_Converted'] >= start_date) & (df['Date_Converted'] <= end_date)
-            filtered_df = df.loc[mask]
-            
-            # Calculations
-            t_patients = len(filtered_df)
-            t_cash = pd.to_numeric(filtered_df['Paid_Amount'], errors='coerce').sum()
-            
-            # Aapki sheet mein column ka naam 'Remaining' hai
-            if 'Remaining' in filtered_df.columns:
-                t_pending_rs = pd.to_numeric(filtered_df['Remaining'], errors='coerce').sum()
-            else:
-                t_pending_rs = 0
-        else:
-            t_patients, t_cash, t_pending_rs = 0, 0, 0
-
-        # --- Metrics Display Boxes ---
+        st.markdown(f"## Welcome to {st.session_state.lab_name}")
+        st.write(f"Today's Date: {today_dt.strftime('%d %B, %Y')}")
         c1, c2, c3, c4 = st.columns(4)
-        
-        with c1:
-            st.markdown(f"""<div style="background:#e3f2fd;padding:15px;border-radius:10px;border-left:5px solid #1e88e5;text-align:center;">
-                <p style="color:#1e88e5;margin:0;font-weight:bold;">Total Patients</p>
-                <h2 style="margin:0;">{t_patients}</h2>
-            </div>""", unsafe_allow_html=True)
-            
-        with c2:
-            st.markdown(f"""<div style="background:#e8f5e9;padding:15px;border-radius:10px;border-left:5px solid #43a047;text-align:center;">
-                <p style="color:#43a047;margin:0;font-weight:bold;">Cash Collected</p>
-                <h2 style="margin:0;">Rs. {int(t_cash)}</h2>
-            </div>""", unsafe_allow_html=True)
+        total_p = len(df[df['Date'] == today]) if not df.empty else 0
+        total_cash = pd.to_numeric(df[df['Date'] == today]['Paid_Amount'], errors='coerce').sum() if not df.empty else 0
+        pending_p = len(df[df['Status'] == 'Pending']) if not df.empty else 0
+        with c1: st.metric("Today's Patients", total_p)
+        with c2: st.metric("Today's Cash", f"Rs. {total_cash}")
+        with c3: st.metric("Total Pending", pending_p)
+        with c4: st.metric("Lab Status", "Online ✅")
 
-        with c3:
-            st.markdown(f"""<div style="background:#fff3e0;padding:15px;border-radius:10px;border-left:5px solid #fb8c00;text-align:center;">
-                <p style="color:#fb8c00;margin:0;font-weight:bold;">Dues / Pending</p>
-                <h2 style="margin:0;">Rs. {int(t_pending_rs)}</h2>
-            </div>""", unsafe_allow_html=True)
-            
-        with c4:
-            st.markdown(f"""<div style="background:#f3e5f5;padding:15px;border-radius:10px;border-left:5px solid #8e24aa;text-align:center;">
-                <p style="color:#8e24aa;margin:0;font-weight:bold;">Lab Status</p>
-                <h2 style="margin:0;font-size:22px;">Online ✅</h2>
-            </div>""", unsafe_allow_html=True)
-
-        if t_patients > 0:
-            st.info(f"Showing data from {start_date} to {end_date}")
+    elif menu == "📝 Registration":
+        st.header("New Patient Registration")
+        if st.session_state.show_slip:
+            st.success("✅ Record Saved to Cloud!")
             
             # --- PRINT & WHATSAPP BUTTONS ---
             v = st.session_state.show_slip
             c_p1, c_p2, c_p3 = st.columns(3)
             
             pdf_bytes = download_pdf_receipt(v, st.session_state.lab_phone)
-           # Line 398 ko aise change karein
-        try:
-            inv_name = str(v[1]) if len(v) > 1 else "Receipt"
-        except:
-            inv_name = "Receipt"
-            
-            c_p1.download_button(
-            label="📥 Download PDF Receipt", 
-            data=pdf_bytes, 
-            file_name=f"Receipt_{inv_name}.pdf", 
-            mime="application/pdf"
-        ) 
+            c_p1.download_button(label="📥 Download PDF Receipt", data=pdf_bytes, file_name=f"Receipt_{v[1]}.pdf", mime="application/pdf")
             
             # WhatsApp Link
             wa_link = send_whatsapp_receipt(v[3], v[4], v[1], v[9], v[11], v[8])
@@ -481,7 +387,7 @@ else:
                         conn.update(worksheet="meds_db", data=new_med_df)
                         st.success("Meds Database Created & Saved!")
                         st.rerun()
-
+                        
 # --- NEW DOCTOR MASTER SECTION ---
         with st.expander("🩺 Add New Doctor"):
             c_dr1, c_dr2 = st.columns([3, 1])
