@@ -75,7 +75,7 @@ def generate_professional_report(p_data, results_list):
     # Header
     pdf.set_font("Arial", 'B', 22)
     pdf.set_text_color(20, 80, 160)
-    pdf.cell(0, 10, "THE LIFE CARE CLINIC & LAB", ln=True, align='C')
+    pdf.cell(0, 10, "JAWAD MEDICAL CENTERE", ln=True, align='C')
     pdf.set_font("Arial", '', 10)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 5, "MAJEED COLONY SEC 2, KARACHI | 0370-2926075", ln=True, align='C')
@@ -134,7 +134,7 @@ def download_pdf_receipt(v, lab_phone):
     pdf = FPDF(format=(80, 150))
     pdf.add_page()
     pdf.set_font("Arial", 'B', 14)
-    pdf.cell(0, 8, "THE LIFE CARE", ln=True, align='C')
+    pdf.cell(0, 8, "JAWAD MEDICAL CENTERE", ln=True, align='C')
     pdf.set_font("Arial", '', 8)
     pdf.cell(0, 4, "MAJEED COLONY SEC 2, KARACHI", ln=True, align='C')
     pdf.cell(0, 4, f"Contact: {lab_phone}", ln=True, align='C')
@@ -254,7 +254,7 @@ if 'temp_tests' not in st.session_state: st.session_state.temp_tests = []
 if 'auth' not in st.session_state: st.session_state['auth'] = False
 if 'show_slip' not in st.session_state: st.session_state.show_slip = None
 if 'saved_mobile' not in st.session_state: st.session_state.saved_mobile = ""
-if 'lab_name' not in st.session_state: st.session_state.lab_name = "THE LIFE CARE CLINIC & LAB"
+if 'lab_name' not in st.session_state: st.session_state.lab_name = "JAWAD MEDICAL CENTERE"
 if 'lab_phone' not in st.session_state: st.session_state.lab_phone = "0370-2926075"
 
 def check_login(u, p):
