@@ -129,7 +129,7 @@ def generate_professional_report(p_data, results_list):
     
     return pdf.output(dest='S').encode('latin-1')
 
-# --- NEW: FUNCTION TO DOWNLOAD RECEIPT (NO CHANGES) ---
+# --- NEW: FUNCTION TO DOWNLOAD RECEIPT (FIXED ERRORS) ---
 def download_pdf_receipt(v, lab_phone):
     pdf = FPDF(format=(80, 150))
     pdf.add_page()
@@ -143,14 +143,14 @@ def download_pdf_receipt(v, lab_phone):
     pdf.cell(0, 6, "PATIENT RECEIPT", border=1, ln=True, align='C')
     pdf.ln(4)
     pdf.set_font("Arial", '', 8)
-    # Sab values ko pehle str() mein convert kar dein taake koi error na aaye
-    # Line 147 ko aise change karein
+
+    # Error Fix: Try block ko sahi kiya aur saari values ko string banaya taake crash na ho
     try:
-            inv_val = str(v[1]) if len(v) > 1 else "N/A"
+        inv_val = str(v[1]) if len(v) > 1 else "N/A"
     except:
-            inv_val = "N/A"
-            
-            invoice_no = "Inv #: " + inv_val
+        inv_val = "N/A"
+    
+    invoice_no = "Inv #: " + inv_val
     date_str = "Date: " + str(v[2])
     patient_name = "Name: " + str(v[3])
     age_sex = "Age/Sex: " + str(v[5]) + "/" + str(v[6])
@@ -163,29 +163,42 @@ def download_pdf_receipt(v, lab_phone):
     pdf.ln(2)
     pdf.cell(0, 5, ref_by, ln=True)
     pdf.ln(2)
+    
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
     pdf.set_font("Arial", 'B', 8)
     pdf.cell(40, 6, "Test Description")
     pdf.cell(20, 6, "Rate", align='R', ln=True)
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
+
+    # Calculations with safety
     tests_list = str(v[8]).split(", ")
-    total_bill = float(v[9])
+    try:
+        total_bill = float(v[9])
+    except:
+        total_bill = 0.0
+        
     per_test_rate = total_bill / len(tests_list) if len(tests_list) > 0 else 0
+    
     pdf.set_font("Arial", '', 8)
     for t in tests_list:
         pdf.cell(40, 6, t)
         pdf.cell(20, 6, f"{per_test_rate:.0f}", align='R', ln=True)
+        
     pdf.ln(2)
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
+    
     pdf.set_font("Arial", 'B', 9)
     pdf.cell(40, 7, "TOTAL BILL:")
     pdf.cell(20, 7, f"Rs. {v[9]}", align='R', ln=True)
+    
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(40, 7, "BALANCE:")
     pdf.cell(20, 7, f"Rs. {v[11]}", align='R', ln=True)
+    
     pdf.ln(5)
     pdf.set_font("Arial", 'B', 7)
     pdf.cell(0, 4, "Developed by Zain - 0370-2926075", ln=True, align='C')
+    
     return pdf.output(dest='S').encode('latin-1')
 
 def get_full_data():
