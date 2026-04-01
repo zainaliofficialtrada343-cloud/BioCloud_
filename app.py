@@ -367,7 +367,7 @@ else:
 # --- NEW MEDICINE MASTER SECTION ---
         with st.expander("💊 Add New Medicine Type"):
             c_m1, c_m2, c_m3 = st.columns([2, 1, 1])
-            new_m_name = c_m1.text_input("Medicine Name", key="new_med_name")
+            new_m_name = c_m1.text_input("meds_db", key="new_med_name")
             new_m_rate = c_m2.number_input("Medicine Price", 0, key="new_med_price")
             
             if c_m3.button("Save New Medicine"):
