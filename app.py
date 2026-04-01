@@ -291,43 +291,44 @@ else:
             st.rerun()
 
     if menu == "🏠 Home":
-        # Header Design
+        # Professional Header
         st.markdown(f"""
             <div style="background-color:#004d4d;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px">
                 <h1 style="color:white;margin:0;">📊 {st.session_state.lab_name} Dashboard</h1>
-                <p style="color:#e0e0e0;margin:5px;">Date: {today_dt.strftime('%d %B, %Y')}</p>
+                <p style="color:#e0e0e0;margin:5px;">Today's Date: {today_dt.strftime('%d %B, %Y')}</p>
             </div>
         """, unsafe_allow_html=True)
 
-        st.write("### 📅 Filter Summary")
-        filter_option = st.selectbox("Select Time Period", 
-                                   ["Today", "Last 7 Days", "Last 30 Days", "All Time"])
+        # --- CALENDAR FILTER SECTION ---
+        st.write("### 📅 Custom Date Filter")
+        col_f1, col_f2 = st.columns(2)
+        
+        with col_f1:
+            start_date = st.date_input("Start Date", today_dt.date())
+        with col_f2:
+            end_date = st.date_input("End Date", today_dt.date())
 
         if not df.empty:
-            # Error Fix: Date ko sahi se convert karna
-            df['Date_Converted'] = pd.to_datetime(df['Date'], errors='coerce')
-            current_date = pd.to_datetime(today_dt).date()
+            # Date conversion
+            df['Date_Converted'] = pd.to_datetime(df['Date'], errors='coerce').dt.date
             
-            if filter_option == "Today":
-                filtered_df = df[df['Date_Converted'].dt.date == current_date]
-            elif filter_option == "Last 7 Days":
-                start_date = current_date - pd.Timedelta(days=7)
-                filtered_df = df[df['Date_Converted'].dt.date >= start_date]
-            elif filter_option == "Last 30 Days":
-                start_date = current_date - pd.Timedelta(days=30)
-                filtered_df = df[df['Date_Converted'].dt.date >= start_date]
-            else:
-                filtered_df = df
+            # Filter data between selected dates
+            filtered_df = df[(df['Date_Converted'] >= start_date) & (df['Date_Converted'] <= end_date)]
             
             # Calculations
             t_patients = len(filtered_df)
             t_cash = pd.to_numeric(filtered_df['Paid_Amount'], errors='coerce').sum()
-            # Pending balance
-            t_pending_rs = pd.to_numeric(filtered_df['Balance'], errors='coerce').sum()
+            
+            # Error Fix for 'Balance' or 'Pending'
+            # Agar 'Balance' column nahi mila, toh 0 dikhaye ga
+            if 'Balance' in filtered_df.columns:
+                t_pending_rs = pd.to_numeric(filtered_df['Balance'], errors='coerce').sum()
+            else:
+                t_pending_rs = 0
         else:
             t_patients, t_cash, t_pending_rs = 0, 0, 0
 
-        # --- Metrics Display ---
+        # --- Metrics Display Boxes ---
         c1, c2, c3, c4 = st.columns(4)
         
         with c1:
@@ -338,21 +339,25 @@ else:
             
         with c2:
             st.markdown(f"""<div style="background:#e8f5e9;padding:15px;border-radius:10px;border-left:5px solid #43a047">
-                <p style="color:#43a047;margin:0;font-weight:bold;">Received Cash</p>
+                <p style="color:#43a047;margin:0;font-weight:bold;">Cash Received</p>
                 <h2 style="margin:0;">Rs. {int(t_cash)}</h2>
             </div>""", unsafe_allow_html=True)
 
         with c3:
             st.markdown(f"""<div style="background:#fff3e0;padding:15px;border-radius:10px;border-left:5px solid #fb8c00">
-                <p style="color:#fb8c00;margin:0;font-weight:bold;">Pending Cash</p>
+                <p style="color:#fb8c00;margin:0;font-weight:bold;">Pending Amount</p>
                 <h2 style="margin:0;">Rs. {int(t_pending_rs)}</h2>
             </div>""", unsafe_allow_html=True)
             
         with c4:
             st.markdown(f"""<div style="background:#f3e5f5;padding:15px;border-radius:10px;border-left:5px solid #8e24aa">
-                <p style="color:#8e24aa;margin:0;font-weight:bold;">Server Status</p>
+                <p style="color:#8e24aa;margin:0;font-weight:bold;">System Status</p>
                 <h2 style="margin:0;font-size:22px;">Online ✅</h2>
             </div>""", unsafe_allow_html=True)
+
+        # Detail Table (Optional)
+        if st.checkbox("Show Details for Selected Dates"):
+            st.dataframe(filtered_df[['Date', 'Patient_Name', 'Total_Amount', 'Paid_Amount']])
             
             # --- PRINT & WHATSAPP BUTTONS ---
             v = st.session_state.show_slip
