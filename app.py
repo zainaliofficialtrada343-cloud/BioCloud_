@@ -144,7 +144,13 @@ def download_pdf_receipt(v, lab_phone):
     pdf.ln(4)
     pdf.set_font("Arial", '', 8)
     # Sab values ko pehle str() mein convert kar dein taake koi error na aaye
-    invoice_no = "Inv #: " + str(v[1])
+    # Line 147 ko aise change karein
+    try:
+            inv_val = str(v[1]) if len(v) > 1 else "N/A"
+    except:
+            inv_val = "N/A"
+            
+            invoice_no = "Inv #: " + inv_val
     date_str = "Date: " + str(v[2])
     patient_name = "Name: " + str(v[3])
     age_sex = "Age/Sex: " + str(v[5]) + "/" + str(v[6])
