@@ -144,18 +144,21 @@ def download_pdf_receipt(v, lab_phone):
     pdf.ln(4)
     pdf.set_font("Arial", '', 8)
 
-    # Error Fix: Try block ko sahi kiya aur saari values ko string banaya taake crash na ho
-    try:
-        inv_val = str(v[1]) if len(v) > 1 else "N/A"
-    except:
-        inv_val = "N/A"
-    
-    invoice_no = "Inv #: " + inv_val
-    date_str = "Date: " + str(v[2])
-    patient_name = "Name: " + str(v[3])
-    age_sex = "Age/Sex: " + str(v[5]) + "/" + str(v[6])
-    ref_by = "Ref By: " + str(v[7])
+    # --- YE HAI FIX: Har value ko check karna ---
+    def safe_get(index, default="N/A"):
+        try:
+            val = v[index]
+            return str(val) if val is not None else default
+        except:
+            return default
 
+    invoice_no = "Inv #: " + safe_get(1)
+    date_str = "Date: " + safe_get(2)
+    patient_name = "Name: " + safe_get(3)
+    age_sex = "Age/Sex: " + safe_get(5) + "/" + safe_get(6)
+    ref_by = "Ref By: " + safe_get(7)
+
+    # PDF Printing
     pdf.cell(30, 5, invoice_no)
     pdf.cell(0, 5, date_str, align='R', ln=True)
     pdf.cell(30, 5, patient_name)
@@ -170,12 +173,14 @@ def download_pdf_receipt(v, lab_phone):
     pdf.cell(20, 6, "Rate", align='R', ln=True)
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
 
-    # Calculations with safety
-    tests_list = str(v[8]).split(", ")
+    # Tests List processing
+    tests_val = safe_get(8, "")
+    tests_list = tests_val.split(", ") if tests_val else ["No Tests"]
+    
     try:
-        total_bill = float(v[9])
+        total_bill = float(v[9]) if v[9] else 0
     except:
-        total_bill = 0.0
+        total_bill = 0
         
     per_test_rate = total_bill / len(tests_list) if len(tests_list) > 0 else 0
     
@@ -186,14 +191,12 @@ def download_pdf_receipt(v, lab_phone):
         
     pdf.ln(2)
     pdf.line(10, pdf.get_y(), 70, pdf.get_y())
-    
     pdf.set_font("Arial", 'B', 9)
     pdf.cell(40, 7, "TOTAL BILL:")
-    pdf.cell(20, 7, f"Rs. {v[9]}", align='R', ln=True)
-    
+    pdf.cell(20, 7, f"Rs. {safe_get(9, '0')}", align='R', ln=True)
     pdf.set_font("Arial", 'B', 10)
     pdf.cell(40, 7, "BALANCE:")
-    pdf.cell(20, 7, f"Rs. {v[11]}", align='R', ln=True)
+    pdf.cell(20, 7, f"Rs. {safe_get(11, '0')}", align='R', ln=True)
     
     pdf.ln(5)
     pdf.set_font("Arial", 'B', 7)
