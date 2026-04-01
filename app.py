@@ -291,21 +291,74 @@ else:
             st.rerun()
 
     if menu == "🏠 Home":
-        st.markdown(f"## Welcome to {st.session_state.lab_name}")
-        st.write(f"Today's Date: {today_dt.strftime('%d %B, %Y')}")
-        c1, c2, c3, c4 = st.columns(4)
-        total_p = len(df[df['Date'] == today]) if not df.empty else 0
-        total_cash = pd.to_numeric(df[df['Date'] == today]['Paid_Amount'], errors='coerce').sum() if not df.empty else 0
-        pending_p = len(df[df['Status'] == 'Pending']) if not df.empty else 0
-        with c1: st.metric("Today's Patients", total_p)
-        with c2: st.metric("Today's Cash", f"Rs. {total_cash}")
-        with c3: st.metric("Total Pending", pending_p)
-        with c4: st.metric("Lab Status", "Online ✅")
+        # --- Piyara sa Header aur Design ---
+        st.markdown(f"""
+            <div style="background-color:#004d4d;padding:20px;border-radius:15px;text-align:center;margin-bottom:20px">
+                <h1 style="color:white;margin:0;">📊 {st.session_state.lab_name} Dashboard</h1>
+                <p style="color:#e0e0e0;margin:5px;">Date: {today_dt.strftime('%d %B, %Y')}</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-    elif menu == "📝 Registration":
-        st.header("New Patient Registration")
-        if st.session_state.show_slip:
-            st.success("✅ Record Saved to Cloud!")
+        # --- Filter Option ---
+        st.write("### 📅 Filter Summary")
+        filter_option = st.selectbox("Select Time Period", 
+                                   ["Today", "Last 7 Days", "Last 30 Days", "All Time"])
+
+        # Data Filter Logic
+        if not df.empty:
+            df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+            
+            if filter_option == "Today":
+                filtered_df = df[df['Date'].dt.date == today_dt.date()]
+            elif filter_option == "Last 7 Days":
+                filtered_df = df[df['Date'].dt.date >= (today_dt - pd.Timedelta(days=7)).date()]
+            elif filter_option == "Last 30 Days":
+                filtered_df = df[df['Date'].dt.date >= (today_dt - pd.Timedelta(days=30)).date()]
+            else:
+                filtered_df = df
+            
+            # Calculations
+            t_patients = len(filtered_df)
+            t_cash = pd.to_numeric(filtered_df['Paid_Amount'], errors='coerce').sum()
+            # Pending balance calculate karne ke liye hum 'Balance' column use karenge
+            t_pending_rs = pd.to_numeric(filtered_df['Balance'], errors='coerce').sum()
+        else:
+            t_patients, t_cash, t_pending_rs = 0, 0, 0
+
+        # --- Metrics Display ---
+        c1, c2, c3, c4 = st.columns(4)
+        
+        with c1:
+            st.markdown(f"""<div style="background:#e3f2fd;padding:15px;border-radius:10px;border-left:5px solid #1e88e5">
+                <p style="color:#1e88e5;margin:0;font-weight:bold;">Patients</p>
+                <h2 style="margin:0;">{t_patients}</h2>
+            </div>""", unsafe_allow_html=True)
+            
+        with c2:
+            st.markdown(f"""<div style="background:#e8f5e9;padding:15px;border-radius:10px;border-left:5px solid #43a047">
+                <p style="color:#43a047;margin:0;font-weight:bold;">Received Cash</p>
+                <h2 style="margin:0;">Rs. {int(t_cash)}</h2>
+            </div>""", unsafe_allow_html=True)
+
+        with c3:
+            # Pending Amount ko Red color diya hai taake highlight ho
+            st.markdown(f"""<div style="background:#fff3e0;padding:15px;border-radius:10px;border-left:5px solid #fb8c00">
+                <p style="color:#fb8c00;margin:0;font-weight:bold;">Pending Cash</p>
+                <h2 style="margin:0;">Rs. {int(t_pending_rs)}</h2>
+            </div>""", unsafe_allow_html=True)
+            
+        with c4:
+            st.markdown(f"""<div style="background:#f3e5f5;padding:15px;border-radius:10px;border-left:5px solid #8e24aa">
+                <p style="color:#8e24aa;margin:0;font-weight:bold;">Server Status</p>
+                <h2 style="margin:0;font-size:22px;">Online ✅</h2>
+            </div>""", unsafe_allow_html=True)
+
+        # Ek chota sa message
+        if t_pending_rs > 0:
+            st.warning(f"⚠️ Note: Market mein total Rs. {int(t_pending_rs)} pending hain.")
+
+        elif menu == "📝 Registration":
+        # ... (Baaki code waisa hi rahega)
             
             # --- PRINT & WHATSAPP BUTTONS ---
             v = st.session_state.show_slip
@@ -387,7 +440,7 @@ else:
                         conn.update(worksheet="meds_db", data=new_med_df)
                         st.success("Meds Database Created & Saved!")
                         st.rerun()
-                        
+
 # --- NEW DOCTOR MASTER SECTION ---
         with st.expander("🩺 Add New Doctor"):
             c_dr1, c_dr2 = st.columns([3, 1])
