@@ -25,9 +25,14 @@ def show_receipt(v):
                 </tr>
                 """
 
-        # --- Yahan Doctor ka naam set ho raha hai ---
-        # Agar v[7] (Referring Doctor) khali nahi hai, toh wo aaye, warna "LAB BOX"
-        ref_doctor = str(v[7]).upper() if v[7] and str(v[7]) != "--- Select Doctor ---" else "LAB BOX"
+        # --- Doctor ka naam aur Label set ho raha hai ---
+        # "Ref By" ko alag rakha hai aur Doctor ke naam ko alag
+        ref_label = "REF BY:" 
+        ref_doctor = str(v[7]).upper() if v[7] and str(v[7]) != "--- Select Doctor ---" else "SELF"
+
+        # HTML mein {{ ref }} ki jagah hum label aur naam dono bhej rahe hain
+        # Taake mobile ke niche ye dono wazay nazar aayein
+        ref_display = f"{ref_label} {ref_doctor}"
 
         final_html = html_template.replace("{{ token }}", str(v[0])) \
                                    .replace("{{ patient }}", str(v[3]).upper()) \
@@ -35,7 +40,7 @@ def show_receipt(v):
                                    .replace("{{ age_gen }}", f"{v[5]} / {v[6]}".upper()) \
                                    .replace("{{ date }}", str(v[2])) \
                                    .replace("{{ mobile }}", str(v[4])) \
-                                   .replace("{{ ref }}", ref_doctor) \
+                                   .replace("{{ ref }}", ref_display) \
                                    .replace("{{ items_rows }}", items_html) \
                                    .replace("{{ total }}", str(v[9])) \
                                    .replace("{{ paid }}", str(v[10])) \
@@ -43,6 +48,5 @@ def show_receipt(v):
 
         # Height thodi kam ki hai taake faltu page na nikalay printer se
         components.html(final_html, height=550, scrolling=False)
-
     except Exception as e:
-        st.error(f"Design Error: {e}")
+        st.error(f"Receipt Error: {e}")
