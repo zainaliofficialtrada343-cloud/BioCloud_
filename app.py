@@ -395,7 +395,18 @@ else:
             c_p1, c_p2, c_p3 = st.columns(3)
             
             pdf_bytes = download_pdf_receipt(v, st.session_state.lab_phone)
-            c_p1.download_button(label="📥 Download PDF Receipt", data=pdf_bytes, file_name=f"Receipt_{v[1]}.pdf", mime="application/pdf")
+           # Line 398 ko aise change karein
+        try:
+            inv_name = str(v[1]) if len(v) > 1 else "Receipt"
+        except:
+            inv_name = "Receipt"
+            
+            c_p1.download_button(
+            label="📥 Download PDF Receipt", 
+            data=pdf_bytes, 
+            file_name=f"Receipt_{inv_name}.pdf", 
+            mime="application/pdf"
+        ) 
             
             # WhatsApp Link
             wa_link = send_whatsapp_receipt(v[3], v[4], v[1], v[9], v[11], v[8])
