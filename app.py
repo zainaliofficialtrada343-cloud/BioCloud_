@@ -391,7 +391,7 @@ else:
 # --- NEW DOCTOR MASTER SECTION ---
         with st.expander("🩺 Add New Doctor"):
             c_dr1, c_dr2 = st.columns([3, 1])
-            new_dr_name = c_dr1.text_input("Doctor Name", key="new_dr_name")
+            new_dr_name = c_dr1.text_input("Medicine_Name", key="new_dr_name")
             
             if c_dr2.button("Save Doctor"):
                 if new_dr_name:
