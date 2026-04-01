@@ -408,27 +408,18 @@ else:
             mime="application/pdf"
         ) 
             
-            # --- SAFE WHATSAPP LINK GENERATION ---
-        try:
-            # Check karein ke v mein saara data hai ya nahi
-            p_name = str(v[3]) if len(v) > 3 else "Patient"
-            p_phone = str(v[4]) if len(v) > 4 else ""
-            p_inv = str(v[1]) if len(v) > 1 else "000"
-            p_total = str(v[9]) if len(v) > 9 else "0"
-            p_bal = str(v[11]) if len(v) > 11 else "0"
-            p_tests = str(v[8]) if len(v) > 8 else "N/A"
+            # WhatsApp Link
+            wa_link = send_whatsapp_receipt(v[3], v[4], v[1], v[9], v[11], v[8])
+            c_p2.link_button("📲 Send WhatsApp Receipt", wa_link)
 
-            wa_link = send_whatsapp_receipt(p_name, p_phone, p_inv, p_total, p_bal, p_tests)
-            
-            st.markdown(f"""
-                <a href="{wa_link}" target="_blank">
-                    <button style="width:100%; background-color:#25D366; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">
-                        🟢 Send Receipt via WhatsApp
-                    </button>
-                </a>
-            """, unsafe_allow_html=True)
-        except Exception as e:
-            st.warning("WhatsApp link could not be generated due to missing data.")
+            if c_p3.button("🖨️ Direct Print Receipt"):
+                st.components.v1.html("<script>window.print();</script>", height=0)
+
+            show_receipt(st.session_state.show_slip)
+            if st.button("Register Another Patient"):
+                st.session_state.show_slip = None
+                st.rerun()
+            st.divider()
 
         tdf = get_tests_list()
         test_options = sorted(tdf["Test_Name"].unique().tolist()) if not tdf.empty else []
