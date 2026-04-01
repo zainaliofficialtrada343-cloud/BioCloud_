@@ -1,3 +1,23 @@
+def show_medicine_section(conn):
+    if 'temp_meds' not in st.session_state:
+        st.session_state.temp_meds = []
+
+    st.markdown("---")
+    
+    # --- DOCTOR SELECTION DROPDOWN ---
+    try:
+        dr_data = conn.read(worksheet="doctors_db", ttl="0")
+        dr_options = dr_data['Doctor_Name'].tolist()
+    except:
+        dr_options = []
+
+    selected_dr = st.selectbox("👨‍⚕️ Select Referring Doctor", ["--- Select Doctor ---"] + dr_options)
+    
+    st.subheader("💊 Pharmacy / Medicine Selection")
+    
+    # Baaki aapka purana medicine wala code yahan se continue hoga...
+    mdf = get_medicine_list(conn)
+    # ... (No changes to the rest of your code)
 import streamlit as st
 import pandas as pd
 

@@ -387,6 +387,25 @@ else:
                         conn.update(worksheet="meds_db", data=new_med_df)
                         st.success("Meds Database Created & Saved!")
                         st.rerun()
+                        
+# --- NEW DOCTOR MASTER SECTION ---
+        with st.expander("🩺 Add New Doctor"):
+            c_dr1, c_dr2 = st.columns([3, 1])
+            new_dr_name = c_dr1.text_input("Doctor Name", key="new_dr_name")
+            
+            if c_dr2.button("Save Doctor"):
+                if new_dr_name:
+                    new_dr_df = pd.DataFrame([{"Doctor_Name": new_dr_name}])
+                    try:
+                        existing_drs = conn.read(worksheet="doctors_db", ttl="0")
+                        updated_drs = pd.concat([existing_drs, new_dr_df], ignore_index=True)
+                        conn.update(worksheet="doctors_db", data=updated_drs)
+                        st.success(f"Dr. {new_dr_name} Save Ho Gaye!")
+                        st.rerun()
+                    except:
+                        conn.update(worksheet="doctors_db", data=new_dr_df)
+                        st.success("Doctor Database Created!")
+                        st.rerun()
 
         # --- MEDICINE SECTION (Hamesha nazar aaye ga) ---
         show_medicine_section(conn)
