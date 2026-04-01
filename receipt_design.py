@@ -25,13 +25,17 @@ def show_receipt(v):
                 </tr>
                 """
 
+        # --- Yahan Doctor ka naam set ho raha hai ---
+        # Agar v[7] (Referring Doctor) khali nahi hai, toh wo aaye, warna "LAB BOX"
+        ref_doctor = str(v[7]).upper() if v[7] and str(v[7]) != "--- Select Doctor ---" else "LAB BOX"
+
         final_html = html_template.replace("{{ token }}", str(v[0])) \
                                    .replace("{{ patient }}", str(v[3]).upper()) \
                                    .replace("{{ inv }}", str(v[1])) \
                                    .replace("{{ age_gen }}", f"{v[5]} / {v[6]}".upper()) \
                                    .replace("{{ date }}", str(v[2])) \
                                    .replace("{{ mobile }}", str(v[4])) \
-                                   .replace("{{ ref }}", str(v[7]).upper() if v[7] else "LAB BOX") \
+                                   .replace("{{ ref }}", ref_doctor) \
                                    .replace("{{ items_rows }}", items_html) \
                                    .replace("{{ total }}", str(v[9])) \
                                    .replace("{{ paid }}", str(v[10])) \
