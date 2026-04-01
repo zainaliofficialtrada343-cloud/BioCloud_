@@ -143,7 +143,7 @@ def download_pdf_receipt(v, lab_phone):
     pdf.cell(0, 6, "PATIENT RECEIPT", border=1, ln=True, align='C')
     pdf.ln(4)
     pdf.set_font("Arial", '', 8)
-    pdf.cell(30, 5, f"Inv #: {v[1]}")
+    pdf.cell(30, 5, f"Inv #: {str(v[1])}")
     pdf.cell(0, 5, f"Date: {v[2]}", align='R', ln=True)
     pdf.cell(30, 5, f"Name: {v[3]}")
     pdf.cell(0, 5, f"Age/Sex: {v[5]}/{v[6]}", align='R', ln=True)
